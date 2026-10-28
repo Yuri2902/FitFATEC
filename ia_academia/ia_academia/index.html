@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistente da Academia</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --texto: #1f2430; --suave: #6b7280;
+    --borda: #e2e5ea; --cor: #e8590c; --cor-escura: #c24a08;
+    --user: #e8590c; --bot: #eef0f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161b; --card: #1d2027; --texto: #eceef2; --suave: #9aa1ad;
+      --borda: #2c303a; --bot: #2a2e38;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--texto);
+  }
+  header { background: var(--cor); color: #fff; padding: 16px 24px; font-size: 1.25rem; font-weight: 600; }
+  main {
+    display: grid; grid-template-columns: 300px 1fr; gap: 20px;
+    max-width: 1000px; margin: 20px auto; padding: 0 16px;
+  }
+  .painel, .chat {
+    background: var(--card); border: 1px solid var(--borda); border-radius: 12px; padding: 20px;
+  }
+  h2 { margin: 0 0 14px; font-size: 1rem; }
+  label { display: block; font-size: .85rem; color: var(--suave); margin: 12px 0 4px; }
+  input, select {
+    width: 100%; padding: 8px 10px; border-radius: 8px; font-size: .95rem;
+    border: 1px solid var(--borda); background: var(--bg); color: var(--texto);
+  }
+  .risco { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--borda); }
+  .barra { height: 10px; background: var(--borda); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+  .barra div { height: 100%; width: 0; background: #2f9e44; transition: width .4s, background .4s; }
+  #riscoTexto { font-size: 1.6rem; font-weight: 700; }
+  .chat { display: flex; flex-direction: column; height: 70vh; min-height: 420px; }
+  #mensagens { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+  .msg { max-width: 80%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; line-height: 1.45; }
+  .msg.user { align-self: flex-end; background: var(--user); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.bot { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
+  form { display: flex; gap: 8px; margin-top: 14px; }
+  form input { flex: 1; }
+  button {
+    background: var(--cor); color: #fff; border: 0; border-radius: 8px;
+    padding: 0 20px; font-size: .95rem; cursor: pointer;
+  }
+  button:hover { background: var(--cor-escura); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } .chat { height: 60vh; } }
+</style>
+</head>
+<body>
+<header>🏋️ Assistente da Academia</header>
+
+<main>
+  <aside class="painel">
+    <h2>Dados do aluno</h2>
+    <label for="idade">Idade</label>
+    <input id="idade" type="number" min="14" max="90" value="25">
+
+    <label for="objetivo">Objetivo</label>
+    <select id="objetivo">
+      <option>ganhar massa muscular</option>
+      <option>emagrecer</option>
+      <option>condicionamento</option>
+      <option>saúde geral</option>
+    </select>
+
+    <label for="nivel">Nível</label>
+    <select id="nivel">
+      <option>iniciante</option>
+      <option>intermediário</option>
+      <option>avançado</option>
+    </select>
+
+    <label for="frequencia_semanal">Treinos por semana</label>
+    <input id="frequencia_semanal" type="number" min="0" max="7" value="3">
+
+    <label for="meses_matricula">Meses de matrícula</label>
+    <input id="meses_matricula" type="number" min="0" max="120" value="3">
+
+    <label for="faltas_ultimo_mes">Faltas no último mês</label>
+    <input id="faltas_ultimo_mes" type="number" min="0" max="30" value="4">
+
+    <div class="risco">
+      <div style="font-size:.85rem;color:var(--suave)">Risco de desistência</div>
+      <div id="riscoTexto">--</div>
+      <div class="barra"><div id="riscoBarra"></div></div>
+    </div>
+  </aside>
+
+  <section class="chat">
+    <div id="mensagens">
+      <div class="msg bot">Olá! Sou seu assistente de treino. Posso montar sua rotina da semana ou tirar dúvidas. Como posso ajudar?</div>
+    </div>
+    <form id="formChat">
+      <input id="pergunta" type="text" placeholder="Digite sua mensagem..." autocomplete="off" required>
+      <button id="enviar" type="submit">Enviar</button>
+    </form>
+  </section>
+</main>
+
+<script>
+  const campos = ["idade", "objetivo", "nivel", "frequencia_semanal", "meses_matricula", "faltas_ultimo_mes"];
+  const historico = [];
+
+  function lerAluno() {
+    const aluno = {};
+    campos.forEach(c => { aluno[c] = document.getElementById(c).value; });
+    return aluno;
+  }
+
+  function mostrarRisco(risco) {
+    const pct = Math.round(risco * 100);
+    document.getElementById("riscoTexto").textContent = pct + "%";
+    const barra = document.getElementById("riscoBarra");
+    barra.style.width = pct + "%";
+    barra.style.background = pct > 60 ? "#e03131" : pct > 35 ? "#f59f00" : "#2f9e44";
+  }
+
+  async function atualizarRisco() {
+    try {
+      const r = await fetch("/api/risco", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aluno: lerAluno() })
+      });
+      const dados = await r.json();
+      if (dados.risco !== undefined) mostrarRisco(dados.risco);
+    } catch (e) {
+      document.getElementById("riscoTexto").textContent = "--";
+    }
+  }
+
+  function adicionarMensagem(texto, tipo) {
+    const div = document.createElement("div");
+    div.className = "msg " + tipo;
+    div.textContent = texto;            // textContent evita injeção de HTML
+    const area = document.getElementById("mensagens");
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+    return div;
+  }
+
+  document.getElementById("formChat").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const campo = document.getElementById("pergunta");
+    const botao = document.getElementById("enviar");
+    const texto = campo.value.trim();
+    if (!texto) return;
+
+    adicionarMensagem(texto, "user");
+    historico.push({ role: "user", content: texto });
+    campo.value = "";
+    botao.disabled = true;
+    const aguardando = adicionarMensagem("Pensando...", "bot");
+
+    try {
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aluno: lerAluno(), historico })
+      });
+      const dados = await r.json();
+      if (!r.ok) throw new Error(dados.erro || "Erro no servidor");
+      aguardando.textContent = dados.resposta;
+      historico.push({ role: "assistant", content: dados.resposta });
+      mostrarRisco(dados.risco);
+    } catch (err) {
+      aguardando.textContent = "Ops, algo deu errado: " + err.message;
+      historico.pop();                  // remove a pergunta que não foi respondida
+    } finally {
+      botao.disabled = false;
+      campo.focus();
+    }
+  });
+
+  campos.forEach(c => document.getElementById(c).addEventListener("change", atualizarRisco));
+  atualizarRisco();
+</script>
+</body>
+</html>

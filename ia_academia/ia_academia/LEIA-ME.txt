@@ -1,0 +1,23 @@
+IA PARA ACADEMIA - COMO RODAR
+
+1. Crie e ative o ambiente virtual:
+   python -m venv venv
+   Windows: venv\Scripts\activate
+   Linux/Mac: source venv/bin/activate
+
+2. Instale as bibliotecas:
+   pip install -r requirements.txt
+
+3. Configure sua chave de API (feche e abra o terminal depois no Windows):
+   Windows: setx ANTHROPIC_API_KEY "sua_chave_aqui"
+   Linux/Mac: export ANTHROPIC_API_KEY="sua_chave_aqui"
+
+4. Gere os dados e treine o modelo:
+   python gerar_dados.py
+   python treinar_modelo.py
+
+5. Rode a interface (escolha uma):
+   Versão HTML/CSS:  python servidor.py   -> abra http://localhost:5000
+   Versão Streamlit: streamlit run app.py
+
+Mais detalhes e explicações: ia_academia_guia.md
