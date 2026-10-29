@@ -1,5 +1,15 @@
 IA PARA ACADEMIA - COMO RODAR
 
+requirements:
+pandas
+numpy
+scikit-learn
+joblib
+anthropic
+flask
+streamlit
+
+
 1. Crie e ative o ambiente virtual:
    python -m venv venv
    Windows: venv\Scripts\activate
