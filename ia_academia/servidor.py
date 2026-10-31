@@ -20,6 +20,11 @@ def limpar_aluno(dados):
         return None
 
 
+@app.get("/health")
+def health():
+    return jsonify({"status": "ok", "mensagem": "Servidor Flask está funcionando"})
+
+
 @app.get("/")
 def pagina_inicial():
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
