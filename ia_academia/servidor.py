@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from assistente import responder, risco_de_desistir
 
@@ -21,7 +22,9 @@ def limpar_aluno(dados):
 
 @app.get("/")
 def pagina_inicial():
-    return send_from_directory(".", "index.html")
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    public_dir = os.path.join(project_root, "public")
+    return send_from_directory(public_dir, "index.html")
 
 
 @app.post("/api/risco")

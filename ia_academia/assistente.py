@@ -3,7 +3,8 @@ import joblib
 import pandas as pd
 import anthropic
 
-client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+api_key = os.environ.get("ANTHROPIC_API_KEY")
+client = anthropic.Anthropic(api_key=api_key) if api_key else None
 modelo = joblib.load("modelo_evasao.pkl")
 
 
@@ -21,6 +22,10 @@ def risco_de_desistir(aluno):
 def responder(aluno, historico):
     """historico: lista de mensagens [{"role": "user"/"assistant", "content": "..."}]"""
     risco = risco_de_desistir(aluno)
+
+    if client is None:
+        return ("O chatbot está indisponível no momento porque a chave da API da Anthropic "
+                "não está configurada. O serviço de risco de desistência continua funcionando.")
 
     instrucoes = f"""Você é um assistente virtual de academia, simpático e motivador.
 
