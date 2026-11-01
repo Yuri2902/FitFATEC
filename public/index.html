@@ -21,7 +21,7 @@
     margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     background: var(--bg); color: var(--texto);
   }
-  header { background: var(--cor); color: #fff; padding: 16px 24px; font-size: 1.25rem; font-weight: 600; }
+  header { background: var(--cor); color: #fff; padding: 16px 24px; font-size: 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
   main {
     display: grid; grid-template-columns: 300px 1fr; gap: 20px;
     max-width: 1000px; margin: 20px auto; padding: 0 16px;
@@ -56,7 +56,10 @@
 </style>
 </head>
 <body>
-<header>🏋️ Assistente da Academia</header>
+<header>
+  <div>🏋️ Assistente da Academia</div>
+  <a href="/teste-auth"><button>Entrar</button></a>
+</header>
 
 <main>
   <aside class="painel">

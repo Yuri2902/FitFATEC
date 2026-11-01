@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teste de Autenticação - FitFATEC</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: #f4f5f7; color: #1f2430; }
+  header { background: #e8590c; color: #fff; padding: 16px 24px; font-size: 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  main { max-width: 500px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 1rem; margin-bottom: 16px; }
+  .card { background: #fff; border: 1px solid #e2e5ea; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  label { display: block; font-size: 0.85rem; color: #6b7280; margin: 10px 0 4px; }
+  input { width: 100%; padding: 8px 10px; border-radius: 8px; font-size: 0.95rem; border: 1px solid #e2e5ea; background: #f4f5f7; margin-bottom: 10px; }
+  button { background: #e8590c; color: #fff; border: 0; border-radius: 8px; padding: 10px 20px; font-size: 0.95rem; cursor: pointer; width: 100%; margin-top: 10px; }
+  button:hover { background: #c24a08; }
+  button:disabled { opacity: .6; cursor: not-allowed; }
+  button.secondary { background: #6b7280; width: auto; margin-top: 6px; }
+  button.secondary:hover { background: #4b5563; }
+  .feedback { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
+  .feedback.sucesso { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .feedback.erro { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .feedback.processando { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+  #usuario { font-weight: 600; }
+  .aviso { font-size: 0.8rem; color: #6b7280; margin-top: 20px; border-top: 1px solid #e2e5ea; padding-top: 12px; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+  <div>🏋️ Teste de Autenticação</div>
+  <button class="secondary" onclick="voltar()">Voltar ao início</button>
+</header>
+
+<main>
+  <h2>Cadastro</h2>
+  <div class="card">
+    <label>Nome</label>
+    <input id="cadNome" type="text" placeholder="João Silva">
+    <label>E-mail</label>
+    <input id="cadEmail" type="email" placeholder="joao@email.com">
+    <label>Senha (mín. 8 caracteres)</label>
+    <input id="cadSenha" type="password" placeholder="••••••••">
+    <button id="btnCadastro" onclick="cadastrar()">Cadastrar</button>
+    <div id="msgCadastro" class="feedback"></div>
+  </div>
+
+  <h2>Login</h2>
+  <div class="card">
+    <label>E-mail</label>
+    <input id="logEmail" type="email" placeholder="joao@email.com">
+    <label>Senha</label>
+    <input id="logSenha" type="password" placeholder="••••••••">
+    <button id="btnLogin" onclick="login()">Entrar</button>
+    <div id="msgLogin" class="feedback"></div>
+  </div>
+
+  <h2>Usuário Conectado</h2>
+  <div class="card">
+    <button id="btnConsultar" onclick="consultarUsuario()">Consultar usuário</button>
+    <button class="secondary" id="btnLogout" onclick="logout()">Sair</button>
+    <div id="msgUsuario" class="feedback"></div>
+  </div>
+
+  <div class="aviso">
+    Página provisória apenas para testes de autenticação. Será substituída pelo frontend oficial do Dev 4.
+  </div>
+</main>
+
+<script>
+const API = ""; // mesma origem
+
+function mostrar(id, texto, tipo) {
+  const el = document.getElementById(id);
+  el.textContent = texto;
+  el.className = "feedback " + tipo;
+  el.style.display = "block";
+}
+
+function esconder(id) {
+  const el = document.getElementById(id);
+  el.style.display = "none";
+}
+
+async function cadastrar() {
+  const btn = document.getElementById("btnCadastro");
+  btn.disabled = true;
+  mostrar("msgCadastro", "Processando...", "processando");
+  try {
+    const nome = document.getElementById("cadNome").value;
+    const email = document.getElementById("cadEmail").value;
+    const senha = document.getElementById("cadSenha").value;
+    const r = await fetch("/cadastro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, email, senha }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      mostrar("msgCadastro", d.mensagem, "sucesso");
+    } else {
+      mostrar("msgCadastro", d.erro || "Erro no cadastro", "erro");
+    }
+  } catch (e) {
+    mostrar("msgCadastro", "Erro de rede: " + e.message, "erro");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function login() {
+  const btn = document.getElementById("btnLogin");
+  btn.disabled = true;
+  mostrar("msgLogin", "Processando...", "processando");
+  try {
+    const email = document.getElementById("logEmail").value;
+    const senha = document.getElementById("logSenha").value;
+    const r = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      mostrar("msgLogin", "Login realizado: " + d.usuario.nome, "sucesso");
+    } else {
+      mostrar("msgLogin", d.erro || "Erro no login", "erro");
+    }
+  } catch (e) {
+    mostrar("msgLogin", "Erro de rede: " + e.message, "erro");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function consultarUsuario() {
+  const btn = document.getElementById("btnConsultar");
+  btn.disabled = true;
+  mostrar("msgUsuario", "Processando...", "processando");
+  try {
+    const r = await fetch("/api/me");
+    const d = await r.json();
+    if (r.ok) {
+      mostrar("msgUsuario", "Conectado: " + d.usuario.nome + " (" + d.usuario.email + ") - papel: " + d.usuario.papel, "sucesso");
+    } else {
+      mostrar("msgUsuario", d.erro || "Não autenticado", "erro");
+    }
+  } catch (e) {
+    mostrar("msgUsuario", "Erro de rede: " + e.message, "erro");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function logout() {
+  const btn = document.getElementById("btnLogout");
+  btn.disabled = true;
+  mostrar("msgUsuario", "Processando...", "processando");
+  try {
+    await fetch("/logout", { method: "POST" });
+    mostrar("msgUsuario", "Logout realizado", "sucesso");
+  } catch (e) {
+    mostrar("msgUsuario", "Erro de rede: " + e.message, "erro");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function voltar() {
+  window.location.href = "/";
+}
+</script>
+</body>
+</html>

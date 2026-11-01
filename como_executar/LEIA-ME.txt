@@ -1,33 +1,149 @@
-IA PARA ACADEMIA - COMO RODAR
+FITFATEC — COMO EXECUTAR
 
-requirements:
-pandas
-numpy
-scikit-learn
-joblib
-anthropic
-flask
-streamlit
+Este documento descreve como configurar e executar o FitFATEC em outro computador.
+Diferencia configuração inicial (primeira vez) de execução diária (já configurado).
 
+--------------------------------------------------------------------------------
+1. PRÉ-REQUISITOS (configuração inicial)
+--------------------------------------------------------------------------------
 
-1. Crie e ative o ambiente virtual:
-   python -m venv venv
-   Windows: venv\Scripts\activate
-   Linux/Mac: source venv/bin/activate
+- Python 3.9 ou superior
+- MySQL 8.0 instalado e em execução localmente
+- Acesso a um usuário do MySQL com permissão para criar bancos e tabelas
 
-2. Instale as bibliotecas:
-   pip install -r requirements.txt
+--------------------------------------------------------------------------------
+2. INSTALAÇÃO DE DEPENDÊNCIAS (configuração inicial)
+--------------------------------------------------------------------------------
 
-3. Configure sua chave de API (feche e abra o terminal depois no Windows):
-   Windows: setx ANTHROPIC_API_KEY "sua_chave_aqui"
-   Linux/Mac: export ANTHROPIC_API_KEY="sua_chave_aqui"
+Abra o terminal na pasta `FitFATEC\ia_academia\`:
 
-4. Gere os dados e treine o modelo:
-   python gerar_dados.py
-   python treinar_modelo.py
+    python -m venv venv
+    venv\Scripts\activate        # Windows
+    # source venv/bin/activate   # Linux/Mac
 
-5. Rode a interface (escolha uma):
-   Versão HTML/CSS:  python servidor.py   -> abra http://localhost:5000
-   Versão Streamlit: streamlit run app.py
+    pip install -r requirements.txt
 
-Mais detalhes e explicações: ia_academia_guia.md
+O `requirements.txt` inclui: flask, pandas, numpy, scikit-learn, joblib, anthropic,
+mysql-connector-python.
+
+--------------------------------------------------------------------------------
+3. CONFIGURAÇÃO DO BANCO DE DADOS MySQL (configuração inicial)
+--------------------------------------------------------------------------------
+
+3.1 Criar o banco e as tabelas
+
+No MySQL Workbench ou cliente de linha de comando, execute o script:
+
+    bdd/bd_fitfatec.sql
+
+ATENÇÃO: este script contém `DROP DATABASE fitfatec;` no início, que APAGA
+todos os dados existentes no banco `fitfatec` antes de recriá-lo. Use apenas
+em ambiente de desenvolvimento ou quando quiser reiniciar o banco do zero.
+
+Este script cria o banco `fitfatec` e as tabelas:
+  aluno, frequencia, exercicio, treino.
+
+A tabela `aluno` inclui as colunas de autenticação: `senha_hash`, `papel`,
+`created_at` e `updated_at`.
+
+3.2 Configurar variáveis de ambiente
+
+O `servidor.py` lê as variáveis via `os.environ.get()` e **não carrega**
+arquivo `.env` automaticamente. Defina as variáveis no sistema operacional
+(não insira senhas reais neste documento):
+
+    DB_HOST=localhost
+    DB_NAME=fitfatec
+    DB_USER=<seu_usuario_mysql>
+    DB_PASSWORD=<sua_senha_mysql>
+    SECRET_KEY=<chave_aleatoria_para_sessoes_flask>
+    ANTHROPIC_API_KEY=<chave_da_anthropic_opcional_para_chatbot>
+
+No Windows (PowerShell), defina temporariamente na sessão:
+
+    $env:DB_HOST="localhost"
+    $env:DB_NAME="fitfatec"
+    $env:DB_USER="seu_usuario"
+    $env:DB_PASSWORD="sua_senha"
+    $env:SECRET_KEY="chave_aleatoria"
+    $env:ANTHROPIC_API_KEY="sua_chave_anthropic"
+
+Para persistir no Windows, use `setx` (feche e reabrir o terminal depois):
+
+    setx DB_HOST "localhost"
+    setx DB_NAME "fitfatec"
+    setx DB_USER "seu_usuario"
+    setx DB_PASSWORD "sua_senha"
+    setx SECRET_KEY "chave_aleatoria"
+
+--------------------------------------------------------------------------------
+4. MODELO DE IA (configuração inicial, opcional para risco de desistência)
+--------------------------------------------------------------------------------
+
+O modelo de previsão de desistência é gerado a partir de dados fictícios.
+Execute apenas na primeira vez ou quando quiser regenerar:
+
+    python gerar_dados.py
+    python treinar_modelo.py
+
+Isso cria `dados/alunos.csv` e `modelo_evasao.pkl` na pasta `ia_academia/`.
+
+Sem o modelo, a rota `/api/risco` não funcionará.
+
+--------------------------------------------------------------------------------
+5. EXECUÇÃO DIÁRIA (já configurado)
+--------------------------------------------------------------------------------
+
+5.1 Ativar o ambiente virtual
+
+    venv\Scripts\activate        # Windows
+    # source venv/bin/activate   # Linux/Mac
+
+5.2 Iniciar o servidor Flask
+
+    python servidor.py
+
+O servidor fica disponível em http://localhost:5000
+
+5.3 Verificar se está funcionando
+
+Abra no navegador ou via curl:
+
+    http://localhost:5000/health
+
+Resposta esperada: {"status":"ok","mensagem":"Servidor Flask está funcionando"}
+
+5.4 Acessar a página de teste de autenticação
+
+    http://localhost:5000/teste-auth
+
+Também é possível clicar no botão "Entrar" no canto superior direito da
+interface principal (http://localhost:5000/).
+
+A página de teste permite: cadastro, login, consulta de usuário conectado e
+logout, consumindo as rotas Flask existentes.
+
+--------------------------------------------------------------------------------
+6. EXECUÇÃO DOS TESTES UNITÁRIOS
+--------------------------------------------------------------------------------
+
+Na pasta `FitFATEC\ia_academia\`, com o venv ativado:
+
+    python -m unittest test_auth_utils.py test_cadastro.py test_login.py test_session.py -v
+
+Os testes usam mock para módulos externos (assistente/anthropic e mysql), então
+não exigem banco real nem chave de API para serem executados.
+
+--------------------------------------------------------------------------------
+7. NOTAS
+--------------------------------------------------------------------------------
+
+- O servidor usa Flask em modo de desenvolvimento (`debug=True`), não adequado
+  para produção sem configurações adicionais.
+- O ambiente virtual `venv` não deve ser versionado no GitHub.
+- O modelo `modelo_evasao.pkl` e os dados `dados/alunos.csv` são gerados
+  localmente e não devem ser versionados.
+- Sem `ANTHROPIC_API_KEY`, o chatbot (`/api/chat`) retorna mensagem de
+  indisponibilidade, mas o risco de desistência continua funcionando.
+- As senhas de banco e as chaves de API nunca devem ser inseridas neste
+  documento nem commitadas no repositório.
