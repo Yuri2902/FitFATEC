@@ -4,27 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Teste de Autenticação - FitFATEC</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; background: #f4f5f7; color: #1f2430; }
-  header { background: #e8590c; color: #fff; padding: 16px 24px; font-size: 1.25rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-  main { max-width: 500px; margin: 30px auto; padding: 0 16px; }
-  h2 { font-size: 1rem; margin-bottom: 16px; }
-  .card { background: #fff; border: 1px solid #e2e5ea; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-  label { display: block; font-size: 0.85rem; color: #6b7280; margin: 10px 0 4px; }
-  input { width: 100%; padding: 8px 10px; border-radius: 8px; font-size: 0.95rem; border: 1px solid #e2e5ea; background: #f4f5f7; margin-bottom: 10px; }
-  button { background: #e8590c; color: #fff; border: 0; border-radius: 8px; padding: 10px 20px; font-size: 0.95rem; cursor: pointer; width: 100%; margin-top: 10px; }
-  button:hover { background: #c24a08; }
-  button:disabled { opacity: .6; cursor: not-allowed; }
-  button.secondary { background: #6b7280; width: auto; margin-top: 6px; }
-  button.secondary:hover { background: #4b5563; }
-  .feedback { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
-  .feedback.sucesso { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-  .feedback.erro { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-  .feedback.processando { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
-  #usuario { font-weight: 600; }
-  .aviso { font-size: 0.8rem; color: #6b7280; margin-top: 20px; border-top: 1px solid #e2e5ea; padding-top: 12px; font-style: italic; }
-</style>
+<link rel="stylesheet" href="CSS.css">
 </head>
 <body>
 <header>
@@ -170,5 +150,6 @@ function voltar() {
   window.location.href = "/";
 }
 </script>
+<script src="visual.js"></script>
 </body>
 </html>
