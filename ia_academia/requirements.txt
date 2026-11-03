@@ -3,5 +3,6 @@ pandas
 numpy
 scikit-learn
 joblib
+google-generativeai
 anthropic
 mysql-connector-python
