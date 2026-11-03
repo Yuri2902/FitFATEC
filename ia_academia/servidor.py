@@ -3,6 +3,7 @@ from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, session
 from assistente import responder, risco_de_desistir
 from auth_utils import validar_cadastro, gerar_hash_senha, verificar_senha
+from treinos.rotas import registrar_treinos
 import mysql.connector
 from mysql.connector import Error
 
@@ -208,6 +209,9 @@ def api_chat():
         return jsonify({"resposta": resposta, "risco": float(risco_de_desistir(aluno))})
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
+
+
+registrar_treinos(app, get_db_connection)
 
 
 if __name__ == "__main__":
