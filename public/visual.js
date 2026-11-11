@@ -95,7 +95,7 @@
   barra.className = "sugestoes";
   form.before(barra);
 
-  ["Monte meu treino da semana", "Como evitar faltas?", "Dicas de alimentação"].forEach(texto => {
+  ["Quero uma série de condicionamento", "Quero agendar uma aula", "Quais são os aquecimentos?", "Treino principal e secundário", "Qual meu nível?"].forEach(texto => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip";

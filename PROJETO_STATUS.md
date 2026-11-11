@@ -1,7 +1,7 @@
 # FitFATEC — Status do Projeto
 
 **Projeto:** FitFATEC — Assistente Inteligente para Academia  
-**Última atualização:** 01/11/2026  
+**Última atualização:** 11/11/2026  
 **Situação:** Backend com autenticação implementado e testado com MySQL real; frontend principal operacional; banco integrado; rotas públicas mantidas (/api/risco e /api/chat sem autenticação por enquanto).
 
 ---
@@ -9,7 +9,7 @@
 ## 1. Objetivo e Estrutura do Projeto
 
 ### Objetivo
-Sistema para academia que combina previsão de risco de desistência (machine learning com scikit-learn) com chatbot baseado em IA (Claude/Anthropic), montando treinos personalizados e ajustando o tom da conversa conforme o risco de desistência do aluno.
+Sistema para academia que combina previsão de risco de desistência (machine learning com scikit-learn) com chatbot baseado em IA generativa (Google Gemini), com persona **Kiara**, montando treinos personalizados e ajustando o tom da conversa conforme o risco de desistência do aluno.
 
 ### Estrutura de diretórios
 
@@ -61,7 +61,7 @@ FitFATEC/
 
 **Testes automatizados (unitários com mock):** 21 testes passando
 (`test_auth_utils.py`, `test_cadastro.py`, `test_login.py`, `test_session.py`).
-Esses testes mockam `assistente/anthropic` e `mysql`, não exigem banco real.
+Esses testes mockam `assistente` e `mysql`, não exigem banco real.
 
 **Testes manuais com banco MySQL real:** cadastro, login, sessão e logout
 executados com sucesso contra o MySQL local, confirmando que as rotas de
@@ -75,7 +75,7 @@ autenticação se integram corretamente ao banco `fitfatec`.
 | `/health` | GET | Status do servidor | ✅ Implementado |
 | `/teste-auth` | GET | Serve página provisória de teste de autenticação | ✅ Implementado |
 | `/api/risco` | POST | Risco de desistência (funciona sem chave da IA) | ✅ Existente |
-| `/api/chat` | POST | Chatbot Claude (indisponível sem `ANTHROPIC_API_KEY`) | ✅ Existente |
+| `/api/chat` | POST | Kiara (Gemini; modo offline sem `GEMINI_API_KEY`) | ✅ Existente |
 
 #### Banco de dados — integrado e testado com MySQL real
 
@@ -90,13 +90,25 @@ autenticação se integram corretamente ao banco `fitfatec`.
 
 ---
 
-## 3. Funcionalidades ainda pendentes
+## 3. Entregas da atividade avaliativa (atualizado em 11/11/2026)
 
-| Item | Status | Responsável sugerido |
-|------|--------|---------------------|
-| Integração do frontend Dev 4 com rotas de autenticação | Pendente | Dev 4 |
-| Módulos de treino/plano de exercício (Dev 3) | Pendente | Dev 3 |
-| Ativar chatbot com `ANTHROPIC_API_KEY` real | Pendente | Dev 2 |
+| Entregável do enunciado | Situação | Onde |
+|---|---|---|
+| Documento do projeto (descrição, objetivos, arquitetura, tecnologias) | ✅ | `documentacao/DOCUMENTO_PROJETO.md` |
+| Persona digital (nome, idade, tom, estilo, vestimenta, traços físicos) | ✅ | `DOCUMENTO_PROJETO.md` §1.1 e prompt em `assistente.py` |
+| Imagem da assistente gerada por IA | ⏳ ilustração provisória (`public/img/kiara.svg`); gerar a final com ferramenta de IA | prompt em `DOCUMENTO_PROJETO.md` §1.2 |
+| Interface conversacional + protótipo navegável | ✅ | `public/index.html` |
+| Agendar aula, série, aquecimento, treino principal/secundário, nível | ✅ | `servidor.py`, `catalogo.py`, `assistente.py` |
+| Fluxos de conversa documentados (mín. 5) | ✅ 6 fluxos | `documentacao/FLUXOS_CONVERSA.md` e `test_assistente.py` |
+| Precificação | ✅ estimativa | `documentacao/PRECIFICACAO.md` |
+| Demonstração do chatbot (vídeo ou apresentação) | ⏳ gravar/apresentar | — |
+| Testes automatizados | ✅ 39 testes | `ia_academia/test_*.py` |
+
+### Pendências restantes
+- Gerar a imagem final da Kiara com IA e trocar em `index.html`.
+- Gravar o vídeo ou montar a apresentação da demonstração.
+- Validar o agendamento contra o MySQL real (rotas testadas só com mock) e recriar o banco com o novo `bd_fitfatec.sql`.
+- Testar o chat com uma `GEMINI_API_KEY` real e confirmar o nome do modelo em `GEMINI_MODEL`.
 
 ---
 
@@ -117,7 +129,7 @@ autenticação se integram corretamente ao banco `fitfatec`.
 ## 5. Integrações necessárias e próximos passos
 
 1. **Dev 4**: substituir `public/teste-auth.html` pelo frontend oficial de autenticação.
-2. **Dev 2**: configurar `ANTHROPIC_API_KEY` para ativar o chatbot.
+2. **Dev 2**: configurar `GEMINI_API_KEY` para ativar a IA generativa.
 3. **Dev 3**: implementar módulos de treino/plano de exercício.
 
 ---

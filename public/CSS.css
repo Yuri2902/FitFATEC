@@ -233,3 +233,13 @@ main.auth {
   #riscoBarra { transition: none; }
   #mensagens { scroll-behavior: auto; }
 }
+
+/* ===== Kiara (persona) e agendamento ===== */
+.marca { display: flex; align-items: center; gap: 10px; }
+.marca img { border-radius: 50%; background: #fff; }
+.acoes-painel { display: grid; gap: 8px; margin-top: 20px; }
+dialog { border: 1px solid var(--borda); border-radius: 12px; background: var(--card); color: var(--texto); padding: 20px; width: min(420px, 92vw); }
+dialog::backdrop { background: rgba(0, 0, 0, .5); }
+dialog h2 { margin-bottom: 4px; }
+.botoes-dialog { display: flex; gap: 8px; margin-top: 14px; }
+.botoes-dialog button { flex: 1; }

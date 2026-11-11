@@ -1,12 +1,17 @@
 import os
+from datetime import date, datetime, timedelta
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, session
 from assistente import responder, risco_de_desistir
+import catalogo
 from auth_utils import validar_cadastro, gerar_hash_senha, verificar_senha
 import mysql.connector
 from mysql.connector import Error
 
-app = Flask(__name__)
+PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+
+# static_url_path="" serve CSS.css, visual.js e img/ direto da pasta public/
+app = Flask(__name__, static_folder=PUBLIC_DIR, static_url_path="")
 
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 
@@ -54,8 +59,11 @@ def salvar_aluno_no_banco(nome, email, senha_hash):
             """,
             (nome, email, senha_hash, "aluno"),
         )
+        id_aluno = cursor.lastrowid
+        matricula = f"{date.today().year}{id_aluno:04d}"
+        cursor.execute("UPDATE aluno SET matricula = %s WHERE id_aluno = %s", (matricula, id_aluno))
         conn.commit()
-        return cursor.lastrowid
+        return id_aluno
     finally:
         cursor.close()
         conn.close()
@@ -128,7 +136,7 @@ def buscar_aluno_por_email(email):
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
             """
-            SELECT id_aluno, nome, email, senha_hash, papel
+            SELECT id_aluno, nome, email, senha_hash, papel, matricula
             FROM aluno
             WHERE email = %s
             """,
@@ -162,6 +170,7 @@ def login():
         "nome": aluno["nome"],
         "email": aluno["email"],
         "papel": aluno["papel"],
+        "matricula": aluno.get("matricula"),
     }
 
     return jsonify(
@@ -206,9 +215,124 @@ def api_chat():
     try:
         resposta = responder(aluno, historico)
         return jsonify({"resposta": resposta, "risco": float(risco_de_desistir(aluno))})
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
+    except Exception:
+        return jsonify({"erro": "A Kiara não conseguiu responder agora. Tente novamente."}), 500
+
+
+# ---------------------------------------------------------------- Treinos
+@app.get("/api/serie")
+def api_serie():
+    """Aquecimento + treino principal + secundário por nível e objetivo."""
+    nivel = request.args.get("nivel", "iniciante")
+    objetivo = request.args.get("objetivo", "saúde geral")
+    return jsonify(catalogo.montar_serie(nivel, objetivo))
+
+
+# ---------------------------------------------------------------- Agendamento
+HORARIOS = [f"{h:02d}:00" for h in range(6, 22)]  # 06:00 a 21:00
+CAPACIDADE_POR_HORARIO = 10
+MODALIDADES = ["musculação", "funcional", "aeróbico"]
+DIAS_MAX_ANTECEDENCIA = 30
+
+
+def buscar_aluno_por_matricula(matricula):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id_aluno, nome FROM aluno WHERE matricula = %s", (matricula,))
+        return cursor.fetchone()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def contar_ocupacao(data_aula):
+    """Retorna {'HH:MM': quantidade} de aulas agendadas na data."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT TIME_FORMAT(horario, '%H:%i'), COUNT(*) FROM agendamento
+               WHERE data_aula = %s AND status = 'agendada' GROUP BY horario""",
+            (data_aula,),
+        )
+        return {h: int(q) for h, q in cursor.fetchall()}
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def inserir_agendamento(id_aluno, data_aula, horario, modalidade):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO agendamento (id_aluno, data_aula, horario, modalidade) VALUES (%s, %s, %s, %s)",
+            (id_aluno, data_aula, horario, modalidade),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def _parse_data(texto):
+    try:
+        return datetime.strptime(str(texto), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+@app.get("/api/horarios")
+def api_horarios():
+    data_aula = _parse_data(request.args.get("data", ""))
+    if data_aula is None:
+        return jsonify({"erro": "Data inválida. Use o formato AAAA-MM-DD."}), 400
+    try:
+        ocupacao = contar_ocupacao(data_aula)
+    except Error:
+        return jsonify({"erro": "Erro ao consultar horários."}), 500
+    return jsonify({"data": str(data_aula), "horarios": [
+        {"horario": h, "vagas": max(0, CAPACIDADE_POR_HORARIO - ocupacao.get(h, 0))}
+        for h in HORARIOS]})
+
+
+@app.post("/api/agendar")
+def api_agendar():
+    corpo = request.get_json(silent=True) or {}
+    matricula = str(corpo.get("matricula", "")).strip()
+    horario = str(corpo.get("horario", "")).strip()
+    modalidade = str(corpo.get("modalidade", "musculação")).strip().lower()
+    data_aula = _parse_data(corpo.get("data", ""))
+
+    if not matricula.isdigit() or not 4 <= len(matricula) <= 12:
+        return jsonify({"erro": "Matrícula inválida."}), 400
+    if data_aula is None:
+        return jsonify({"erro": "Data inválida. Use o formato AAAA-MM-DD."}), 400
+    hoje = date.today()
+    if data_aula < hoje or data_aula > hoje + timedelta(days=DIAS_MAX_ANTECEDENCIA):
+        return jsonify({"erro": f"Escolha uma data entre hoje e {DIAS_MAX_ANTECEDENCIA} dias à frente."}), 400
+    if horario not in HORARIOS:
+        return jsonify({"erro": "Horário indisponível. Atendemos das 06:00 às 21:00."}), 400
+    if modalidade not in MODALIDADES:
+        return jsonify({"erro": "Modalidade inválida."}), 400
+
+    try:
+        aluno = buscar_aluno_por_matricula(matricula)
+        if aluno is None:
+            return jsonify({"erro": "Matrícula não encontrada."}), 404
+        if contar_ocupacao(data_aula).get(horario, 0) >= CAPACIDADE_POR_HORARIO:
+            return jsonify({"erro": "Horário lotado. Escolha outro horário."}), 409
+        id_ag = inserir_agendamento(aluno["id_aluno"], data_aula, horario, modalidade)
+    except Error as e:
+        if getattr(e, "errno", None) == 1062:  # UNIQUE (aluno, data, horário)
+            return jsonify({"erro": "Você já tem aula agendada nesse horário."}), 409
+        return jsonify({"erro": "Erro ao salvar agendamento."}), 500
+
+    return jsonify({"mensagem": f"Aula de {modalidade} agendada para {data_aula.strftime('%d/%m/%Y')} às {horario}.",
+                    "id_agendamento": id_ag}), 201
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1", port=5000)

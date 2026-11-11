@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Assistente da Academia</title>
+<title>Kiara — Assistente Virtual FitFATEC</title>
 <link rel="stylesheet" href="CSS.css">
 </head>
 <body>
 <header>
-  <div>🏋️ Assistente da Academia</div>
+  <div class="marca"><img src="img/kiara.svg" alt="Kiara, mascote da FitFATEC" width="40" height="40"> <span>Kiara · FitFATEC</span></div>
   <a class="btn btn-claro" href="/teste-auth">Entrar</a>
 </header>
 
@@ -48,11 +48,16 @@
       <div id="riscoTexto" aria-live="polite">--</div>
       <div class="barra"><div id="riscoBarra"></div></div>
     </div>
+
+    <div class="acoes-painel">
+      <button type="button" id="btnSerie">Ver minha série</button>
+      <button type="button" id="btnAgendar" class="btn-secundario">Agendar aula</button>
+    </div>
   </aside>
 
   <section class="chat">
     <div id="mensagens" aria-live="polite">
-      <div class="msg bot">Olá! Sou seu assistente de treino. Posso montar sua rotina da semana ou tirar dúvidas. Como posso ajudar?</div>
+      <div class="msg bot">Oi! Eu sou a Kiara, assistente virtual da FitFATEC, 24h por dia. 🐆 Posso agendar sua aula, montar sua série, explicar o aquecimento e os treinos principal e secundário. Como posso ajudar?</div>
     </div>
     <form id="formChat">
       <input id="pergunta" type="text" placeholder="Digite sua mensagem..." autocomplete="off" required aria-label="Mensagem">
@@ -171,6 +176,104 @@
     el.addEventListener("input", atualizarRisco);
   });
   atualizarRisco();
+</script>
+
+<dialog id="dlgAgenda" aria-labelledby="tituloAgenda">
+  <form id="formAgenda" method="dialog">
+    <h2 id="tituloAgenda">Agendar aula</h2>
+    <label for="agMatricula">Matrícula</label>
+    <input id="agMatricula" type="text" inputmode="numeric" pattern="\d{4,12}" placeholder="Ex.: 20260001" required>
+    <label for="agData">Data</label>
+    <input id="agData" type="date" required>
+    <label for="agModalidade">Modalidade</label>
+    <select id="agModalidade">
+      <option>musculação</option><option>funcional</option><option>aeróbico</option>
+    </select>
+    <label for="agHorario">Horário</label>
+    <select id="agHorario" required><option value="">Escolha a data primeiro</option></select>
+    <div id="agMsg" class="feedback" role="status"></div>
+    <div class="botoes-dialog">
+      <button type="submit" id="agConfirmar">Confirmar</button>
+      <button type="button" id="agFechar" class="btn-secundario">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  // ---- Minha série (aquecimento + treino principal + secundário) ----
+  function formatarSerie(s) {
+    const linhas = x => x.exercicios.map(e =>
+      "• " + e.exercicio + ": " + e.series + "x " + e.repeticoes + (e.descanso_s ? " (descanso " + e.descanso_s + "s)" : "")).join("\n");
+    const aq = s.aquecimento.map(a => "• " + a.nome + " (" + a.duracao_min + " min)").join("\n");
+    return "Sua série (" + s.nivel + " · " + s.objetivo + "):\n\nAquecimento:\n" + aq +
+      "\n\nTreino principal — " + s.principal.foco + ":\n" + linhas(s.principal) +
+      "\n\nTreino secundário — " + s.secundario.foco + ":\n" + linhas(s.secundario);
+  }
+  document.getElementById("btnSerie").addEventListener("click", async () => {
+    const aluno = lerAluno();
+    if (!aluno) { adicionarMensagem("Confira os dados do aluno: há campos vazios ou fora do limite.", "bot erro"); return; }
+    try {
+      const r = await fetch("/api/serie?nivel=" + encodeURIComponent(aluno.nivel) + "&objetivo=" + encodeURIComponent(aluno.objetivo));
+      adicionarMensagem(formatarSerie(await r.json()), "bot");
+    } catch (_) { adicionarMensagem("Não consegui buscar sua série agora.", "bot erro"); }
+  });
+
+  // ---- Agendar aula ----
+  const dlg = document.getElementById("dlgAgenda");
+  const agData = document.getElementById("agData");
+  const agHorario = document.getElementById("agHorario");
+  const agMsg = document.getElementById("agMsg");
+
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function feedback(txt, tipo) { agMsg.textContent = txt; agMsg.className = "feedback " + tipo; agMsg.style.display = txt ? "block" : "none"; }
+
+  async function carregarHorarios() {
+    if (!agData.value) return;
+    agHorario.innerHTML = "<option value=''>Carregando...</option>";
+    try {
+      const r = await fetch("/api/horarios?data=" + agData.value);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.erro);
+      agHorario.innerHTML = "";
+      d.horarios.forEach(h => {
+        const o = document.createElement("option");
+        o.value = h.horario;
+        o.textContent = h.horario + (h.vagas ? " — " + h.vagas + " vagas" : " — lotado");
+        o.disabled = h.vagas === 0;
+        agHorario.appendChild(o);
+      });
+    } catch (e) {
+      agHorario.innerHTML = "<option value=''>Indisponível</option>";
+      feedback(e.message || "Erro ao consultar horários.", "erro");
+    }
+  }
+
+  document.getElementById("btnAgendar").addEventListener("click", () => {
+    const hoje = new Date(), max = new Date(); max.setDate(max.getDate() + 30);
+    agData.min = iso(hoje); agData.max = iso(max);
+    feedback("", "");
+    dlg.showModal();
+  });
+  document.getElementById("agFechar").addEventListener("click", () => dlg.close());
+  agData.addEventListener("change", carregarHorarios);
+
+  document.getElementById("formAgenda").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const botao = document.getElementById("agConfirmar");
+    botao.disabled = true;
+    try {
+      const { ok, dados } = await chamarApi("/api/agendar", {
+        matricula: document.getElementById("agMatricula").value.trim(),
+        data: agData.value,
+        horario: agHorario.value,
+        modalidade: document.getElementById("agModalidade").value
+      });
+      if (!ok) throw new Error(dados.erro || "Erro ao agendar.");
+      dlg.close();
+      adicionarMensagem(dados.mensagem + " Te espero lá! 🐆", "bot");
+    } catch (err) { feedback(err.message, "erro"); }
+    finally { botao.disabled = false; }
+  });
 </script>
 <script src="visual.js"></script>
 </body>

@@ -1,10 +1,12 @@
-drop database fitfatec;
+-- ATENÇÃO: descomente a linha abaixo apenas para recriar o banco do zero (apaga todos os dados)
+-- DROP DATABASE IF EXISTS fitfatec;
 CREATE DATABASE IF NOT EXISTS fitfatec CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE fitfatec;
 
 CREATE TABLE aluno (
     id_aluno  INT  PRIMARY KEY AUTO_INCREMENT,
     nome   VARCHAR(100) NOT NULL,
+    matricula VARCHAR(12) NULL UNIQUE,
     email  VARCHAR(120) NOT NULL UNIQUE,
     data_nascimento DATE NULL,
     objetivo VARCHAR(30) NULL,
@@ -49,3 +51,28 @@ CREATE TABLE treino (
     FOREIGN KEY (id_exercicio) REFERENCES exercicio (id_exercicio),
     FOREIGN KEY (id_frequencia) REFERENCES frequencia (id_frequencia)
 );
+
+CREATE TABLE agendamento (
+    id_agendamento INT PRIMARY KEY AUTO_INCREMENT,
+    id_aluno INT NOT NULL,
+    data_aula DATE NOT NULL,
+    horario TIME NOT NULL,
+    modalidade VARCHAR(30) NOT NULL DEFAULT 'musculação',
+    status ENUM('agendada','cancelada','concluida') NOT NULL DEFAULT 'agendada',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_aluno) REFERENCES aluno (id_aluno),
+    UNIQUE (id_aluno, data_aula, horario)
+);
+
+-- Catálogo base de exercícios (usado pelos módulos de treino)
+INSERT INTO exercicio (nome, grupo_muscular, nivel) VALUES
+('Leg press', 'pernas', 'iniciante'),
+('Supino máquina', 'peito', 'iniciante'),
+('Remada sentada', 'costas', 'iniciante'),
+('Prancha', 'core', 'iniciante'),
+('Supino reto', 'peito', 'intermediário'),
+('Puxada frontal', 'costas', 'intermediário'),
+('Rosca direta', 'braços', 'intermediário'),
+('Agachamento livre', 'pernas', 'avançado'),
+('Stiff', 'posterior', 'avançado'),
+('Levantamento terra', 'corpo inteiro', 'avançado');

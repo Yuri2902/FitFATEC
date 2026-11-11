@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Kiara, onça-pintada mascote da FitFATEC">
+  <title>Kiara — mascote FitFATEC (ilustração provisória)</title>
+  <circle cx="100" cy="100" r="98" fill="#fff3ea" stroke="#e8590c" stroke-width="4"/>
+  <circle cx="52" cy="52" r="22" fill="#f4a03a"/><circle cx="52" cy="52" r="11" fill="#7a3b12"/>
+  <circle cx="148" cy="52" r="22" fill="#f4a03a"/><circle cx="148" cy="52" r="11" fill="#7a3b12"/>
+  <ellipse cx="100" cy="108" rx="62" ry="58" fill="#f4a03a"/>
+  <g fill="#7a3b12"><circle cx="64" cy="82" r="5"/><circle cx="78" cy="68" r="4"/><circle cx="136" cy="82" r="5"/><circle cx="122" cy="68" r="4"/><circle cx="100" cy="62" r="4"/><circle cx="58" cy="108" r="4"/><circle cx="142" cy="108" r="4"/></g>
+  <ellipse cx="100" cy="128" rx="30" ry="24" fill="#fff3ea"/>
+  <ellipse cx="78" cy="98" rx="11" ry="13" fill="#fff"/><ellipse cx="122" cy="98" rx="11" ry="13" fill="#fff"/>
+  <circle cx="80" cy="100" r="7" fill="#2f7d32"/><circle cx="120" cy="100" r="7" fill="#2f7d32"/>
+  <circle cx="82" cy="97" r="2.4" fill="#fff"/><circle cx="122" cy="97" r="2.4" fill="#fff"/>
+  <path d="M92 118 h16 l-8 9 z" fill="#3b2412"/>
+  <path d="M100 127 v7 M100 134 q-9 8 -18 2 M100 134 q9 8 18 2" fill="none" stroke="#3b2412" stroke-width="3" stroke-linecap="round"/>
+  <path d="M30 100 a70 70 0 0 1 140 0" fill="none" stroke="#1f2430" stroke-width="7"/>
+  <rect x="22" y="92" width="14" height="26" rx="6" fill="#1f2430"/><rect x="164" y="92" width="14" height="26" rx="6" fill="#1f2430"/>
+  <path d="M60 172 q40 22 80 0 l10 28 h-100 z" fill="#1f2430"/>
+  <path d="M88 178 h24 l-4 14 h-16 z" fill="#e8590c"/>
+</svg>
