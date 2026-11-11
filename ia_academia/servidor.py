@@ -39,7 +39,6 @@ def get_db_connection():
 
 def salvar_aluno_no_banco(nome, email, senha_hash):
     """Insere um novo aluno na tabela aluno.
-
     Retorna o id_aluno gerado.
     Levanta ValueError se o e-mail já estiver cadastrado.
     """

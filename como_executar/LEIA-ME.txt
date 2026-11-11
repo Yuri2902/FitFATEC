@@ -1,8 +1,5 @@
 FITFATEC — COMO EXECUTAR
 
-Este documento descreve como configurar e executar o FitFATEC em outro computador.
-Diferencia configuração inicial (primeira vez) de execução diária (já configurado).
-
 --------------------------------------------------------------------------------
 1. PRÉ-REQUISITOS (configuração inicial)
 --------------------------------------------------------------------------------

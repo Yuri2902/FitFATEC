@@ -1,12 +1,11 @@
-/* visual.js — melhorias visuais do Assistente da Academia.
-   Carregue DEPOIS do script principal do index.html. */
+
 (function () {
   "use strict";
 
   const raiz = document.documentElement;
   const reduzirMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---------- Tema claro / escuro ---------- */
+
   function lerTema() {
     try { return localStorage.getItem("tema"); } catch (_) { return null; }
   }

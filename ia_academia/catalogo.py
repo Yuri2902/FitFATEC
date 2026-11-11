@@ -1,5 +1,4 @@
-"""Catálogo de treinos da Kiara (assistente virtual da FitFATEC).
-
+"""Catálogo de treinos 
 Conteúdo fixo e revisável: aquecimento, treino principal e treino secundário
 por nível de condicionamento e objetivo. A IA generativa usa este catálogo como
 fonte de verdade (não inventa exercícios) e o modo offline responde com ele.

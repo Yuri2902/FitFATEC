@@ -1,11 +1,4 @@
-"""Kiara — assistente virtual da FitFATEC.
-
-Junta três coisas:
-1. modelo de machine learning (risco de desistência);
-2. catálogo de treinos (catalogo.py), usado como fonte de verdade;
-3. IA generativa (Google Gemini). Sem chave de API, a Kiara continua
-   funcionando em modo offline com respostas baseadas em regras.
-
+"""
 Variáveis de ambiente:
     GEMINI_API_KEY  chave da API do Gemini (opcional)
     GEMINI_MODEL    modelo a usar (padrão: gemini-2.5-flash)
@@ -17,7 +10,7 @@ import pandas as pd
 
 import catalogo
 
-# ---------------------------------------------------------------- Gemini
+# Gemini
 API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 MODELO_GEMINI = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
@@ -31,7 +24,7 @@ if API_KEY:
     except ImportError:  # pacote google-genai não instalado
         client = None
 
-# ---------------------------------------------------------------- Modelo ML
+#  Modelo ML(machine learning)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "modelo_evasao.pkl")
 modelo = joblib.load(MODEL_PATH)
@@ -47,7 +40,7 @@ def risco_de_desistir(aluno: dict) -> float:
     return float(modelo.predict_proba(dados)[0][1])
 
 
-# ---------------------------------------------------------------- Persona
+#Persona(ela ta com essa personalidade por conta dos critério)
 PERSONA = """\
 Você é a KIARA, assistente virtual da academia FitFATEC.
 - Identidade: onça-pintada simpática, aparência de jovem adulta (cerca de 25 anos),
@@ -93,7 +86,7 @@ CATÁLOGO (nível e objetivo atuais do aluno):
 """
 
 
-# ---------------------------------------------------------------- Modo offline
+#  Modo offline
 def _ultima(historico, papel):
     for msg in reversed(historico):
         if msg.get("role") == papel:
@@ -162,7 +155,7 @@ def responder_offline(aluno: dict, historico: list, risco: float) -> str:
             "treino principal e secundário ou nível de condicionamento. O que você prefere?")
 
 
-# ---------------------------------------------------------------- Resposta
+#  Resposta
 def responder(aluno: dict, historico: list):
     if not historico:
         return "Erro: nenhuma mensagem foi enviada."
