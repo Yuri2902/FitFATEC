@@ -123,6 +123,49 @@ TREINOS = {
 }
 
 
+
+# Exercícios previamente definidos para pedidos por grupo muscular.
+# O modo offline consulta esta lista em vez de devolver a série completa.
+TREINOS_POR_GRUPO = {
+    "bíceps": ["Rosca direta", "Rosca martelo", "Rosca alternada", "Rosca concentrada"],
+    "tríceps": ["Tríceps corda", "Tríceps com halter acima da cabeça", "Tríceps testa com halteres"],
+    "peito": ["Supino máquina", "Flexão inclinada", "Supino reto"],
+    "costas": ["Remada sentada", "Puxada frontal", "Remada curvada"],
+    "ombros": ["Desenvolvimento máquina", "Elevação lateral", "Desenvolvimento com halteres"],
+    "pernas": ["Leg press", "Agachamento assistido", "Cadeira extensora"],
+    "abdômen": ["Prancha", "Abdominal curto", "Prancha lateral"],
+    "glúteos": ["Elevação pélvica", "Agachamento assistido", "Afundo alternado"],
+    "panturrilhas": ["Panturrilha em pé", "Panturrilha sentado"],
+}
+
+
+def texto_treino_grupo(grupo, nivel, alternativo=False):
+    """Treino demonstrativo com exercícios catalogados para um grupo muscular."""
+    nivel = normalizar_nivel(nivel)
+    exercicios = TREINOS_POR_GRUPO.get(grupo)
+    if exercicios is None:
+        raise ValueError(f"Grupo muscular não catalogado: {grupo}")
+    # O pedido por uma alternativa apresenta outros exercícios quando disponíveis.
+    if alternativo and len(exercicios) >= 4:
+        escolhidos = exercicios[-2:]
+    else:
+        escolhidos = exercicios[:2 if nivel == "iniciante" else 3]
+
+    series = 2 if nivel == "iniciante" else 3
+    linhas = []
+    for nome in escolhidos:
+        if nome.lower().startswith("prancha"):
+            linhas.append(f"- {nome}: {series}x 20s (descanso 45s)")
+        else:
+            linhas.append(f"- {nome}: {series}x 10–12 (descanso 60s)")
+    return f"Treino de {grupo} — nível {nivel}:\n" + "\n".join(linhas)
+
+
+def texto_catalogo_por_grupo(nivel):
+    """Lista de opções de foco que o Gemini também pode consultar."""
+    return "\n\n".join(texto_treino_grupo(grupo, nivel) for grupo in TREINOS_POR_GRUPO)
+
+
 def normalizar_nivel(nivel):
     nivel = (nivel or "").strip().lower()
     return nivel if nivel in NIVEIS else "iniciante"

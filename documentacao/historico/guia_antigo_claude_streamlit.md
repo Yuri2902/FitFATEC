@@ -1,3 +1,9 @@
+# DOCUMENTO HISTÓRICO — NÃO USAR PARA INSTALAÇÃO ATUAL
+
+Este guia mostra a proposta inicial com Claude e Streamlit. O FitFATEC atual usa **Flask + Gemini**. Consulte `README.md` e `como_executar/LEIA-ME.txt`.
+
+---
+
 # IA para Academia em Python: guia completo
 
 Este guia monta um **Assistente Inteligente de Academia** que mistura duas coisas:

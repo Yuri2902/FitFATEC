@@ -1,151 +1,114 @@
-FITFATEC — COMO EXECUTAR
+FITFATEC — INSTALAÇÃO E EXECUÇÃO (ATUALIZADO EM 13/11/2026)
+=======================================================
 
---------------------------------------------------------------------------------
-1. PRÉ-REQUISITOS (configuração inicial)
---------------------------------------------------------------------------------
+IMPORTANTE: os comandos iniciais são executados na pasta FitFATEC, NÃO em ia_academia.
+Requisitos mínimos: Python 3.10+, MySQL 8, Windows PowerShell (scripts opcionais),
+internet apenas para instalar dependências/traduzir exercícios/usar Gemini.
 
-- Python 3.9 ou superior
-- MySQL 8.0 instalado e em execução localmente
-- Acesso a um usuário do MySQL com permissão para criar bancos e tabelas
+A) INSTALAÇÃO RÁPIDA NO WINDOWS
+-------------------------------
+1. Abra FitFATEC no VS Code e abra um terminal PowerShell na pasta FitFATEC.
+2. Execute: .\configurar.ps1
+   Isso cria ia_academia/.venv, instala as bibliotecas e cria .env na raiz.
+   Se o modelo de demonstração não existir, gera/treina com dados sintéticos.
+3. Abra FitFATEC/.env, coloque seu usuário e senha do MySQL.
+   O script cria uma SECRET_KEY aleatória ao preparar o arquivo .env.
+   Se quiser IA, adicione GEMINI_API_KEY=... (opcional); não exponha essa chave.
+4. No MySQL Workbench, se o banco ainda NÃO existe, abra bdd/bd_fitfatec.sql
+   e execute UMA vez. Se o banco já existe, NÃO reaplique sem avaliar os dados.
+   O script contém CREATE TABLE sem IF NOT EXISTS e reimportar não é migração.
+   NUNCA descomente DROP DATABASE sem backup e intenção explícita de apagar dados.
+5. Execute: .\iniciar.ps1
+6. Abra: http://localhost:5000 (interface) e http://localhost:5000/conta (cadastro/login)
+   GET http://localhost:5000/health serve como verificação simples do Flask.
 
---------------------------------------------------------------------------------
-2. INSTALAÇÃO DE DEPENDÊNCIAS (configuração inicial)
---------------------------------------------------------------------------------
+Para rodar testes: .\testar.ps1
+Se executar scripts .ps1 for bloqueado, use a alternativa abaixo sem mudar políticas.
 
-Abra o terminal na pasta `FitFATEC\ia_academia\`:
+B) ALTERNATIVA SEM SCRIPTS / LINUX / MAC
+-----------------------------------------
+Na pasta raiz FitFATEC:
 
-    python -m venv venv
-    venv\Scripts\activate        # Windows
-    # source venv/bin/activate   # Linux/Mac
+    python -m venv ia_academia/.venv
 
-    pip install -r requirements.txt
+Windows PowerShell, sem precisar ativar:
+    ia_academia\.venv\Scripts\python.exe -m pip install -r ia_academia\requirements.txt
 
-O `requirements.txt` inclui: flask, pandas, numpy, scikit-learn, joblib, google-genai,
-mysql-connector-python.
+Linux/Mac:
+    ia_academia/.venv/bin/python -m pip install -r ia_academia/requirements.txt
 
---------------------------------------------------------------------------------
-3. CONFIGURAÇÃO DO BANCO DE DADOS MySQL (configuração inicial)
---------------------------------------------------------------------------------
+Copie .env.example para .env na raiz e substitua os valores COLOQUE_... .
+Crie a SECRET_KEY com:
+    python -c "import secrets; print(secrets.token_hex(32))"
 
-3.1 Criar o banco e as tabelas
+No Workbench, importe bdd/bd_fitfatec.sql apenas se necessário.
 
-No MySQL Workbench ou cliente de linha de comando, execute o script:
-
-    bdd/bd_fitfatec.sql
-
-ATENÇÃO: o script traz `DROP DATABASE IF EXISTS fitfatec;` COMENTADO no início.
-Descomente somente para recriar o banco do zero (apaga todos os dados).
-Se o banco já existia de uma versão anterior, recrie-o para receber a coluna
-`matricula` e a tabela `agendamento`.
-
-Este script cria o banco `fitfatec` e as tabelas:
-  aluno, frequencia, exercicio, treino, agendamento.
-
-A tabela `aluno` inclui as colunas de autenticação: `senha_hash`, `papel`,
-`created_at` e `updated_at`.
-
-3.2 Configurar variáveis de ambiente
-
-O `servidor.py` lê as variáveis via `os.environ.get()` e **não carrega**
-arquivo `.env` automaticamente. Defina as variáveis no sistema operacional
-(não insira senhas reais neste documento):
-
-    DB_HOST=localhost
-    DB_NAME=fitfatec
-    DB_USER=<seu_usuario_mysql>
-    DB_PASSWORD=<sua_senha_mysql>
-    SECRET_KEY=<chave_aleatoria_para_sessoes_flask>
-    GEMINI_API_KEY=<chave_do_gemini_opcional_para_chatbot>
-    GEMINI_MODEL=<modelo_gemini_opcional, padrao gemini-2.5-flash>
-
-No Windows (PowerShell), defina temporariamente na sessão:
-
-    $env:DB_HOST="localhost"
-    $env:DB_NAME="fitfatec"
-    $env:DB_USER="seu_usuario"
-    $env:DB_PASSWORD="sua_senha"
-    $env:SECRET_KEY="chave_aleatoria"
-    $env:GEMINI_API_KEY="sua_chave_gemini"
-
-Para persistir no Windows, use `setx` (feche e reabrir o terminal depois):
-
-    setx DB_HOST "localhost"
-    setx DB_NAME "fitfatec"
-    setx DB_USER "seu_usuario"
-    setx DB_PASSWORD "sua_senha"
-    setx SECRET_KEY "chave_aleatoria"
-
---------------------------------------------------------------------------------
-4. MODELO DE IA (configuração inicial, opcional para risco de desistência)
---------------------------------------------------------------------------------
-
-O modelo de previsão de desistência é gerado a partir de dados fictícios.
-Execute apenas na primeira vez ou quando quiser regenerar:
-
+Se o arquivo ia_academia/modelo_evasao.pkl não existir, execute com o Python
+do ambiente virtual:
+    cd ia_academia
     python gerar_dados.py
     python treinar_modelo.py
-
-Isso cria `dados/alunos.csv` e `modelo_evasao.pkl` na pasta `ia_academia/`.
-
-Sem o modelo, a rota `/api/risco` não funcionará.
-
---------------------------------------------------------------------------------
-5. EXECUÇÃO DIÁRIA (já configurado)
---------------------------------------------------------------------------------
-
-5.1 Ativar o ambiente virtual
-
-    venv\Scripts\activate        # Windows
-    # source venv/bin/activate   # Linux/Mac
-
-5.2 Iniciar o servidor Flask
-
     python servidor.py
 
-O servidor fica disponível em http://localhost:5000
+Se o modelo já existir, basta iniciar 'python servidor.py' dentro de ia_academia.
+No Windows você também pode usar o Python do ambiente por caminho completo
+sem executar o activate. A variável .env é lida automaticamente pelo servidor.
 
-5.3 Verificar se está funcionando
+C) DEPOIS DA INSTALAÇÃO
+-----------------------
+No Windows: .\iniciar.ps1, na raiz, e visite http://localhost:5000.
+Matrícula é gerada no cadastro e lida pela sessão de login; não deve ser digitada
+para agendar aulas. A página /teste-auth continua funcionando como alias antigo
+de /conta para preservar favoritos.
 
-Abra no navegador ou via curl:
+D) BIBLIOTECA / GEMINI (OPCIONAIS)
+----------------------------------
+Já existe um dataset MIT de exercícios em ia_academia/dados/exercicios_mit.json.
+Também existe uma pequena seleção de nomes traduzidos. Para preencher MAIS
+traduções, configure GEMINI_API_KEY no .env e, na pasta ia_academia, rode:
 
-    http://localhost:5000/health
+    python traduzir_exercicios.py
+    python traduzir_exercicios.py --conferir
 
-Resposta esperada: {"status":"ok","mensagem":"Servidor Flask está funcionando"}
+Isso consome chamadas à API; pode ser interrompido e retomado. O arquivo
+'ia_academia/dados/revisao_traducoes.csv' precisa de revisão humana, especialmente
+para movimentos pouco comuns. Os nomes originais ficam ligados aos mesmos IDs.
+Para baixar novamente os metadados da fonte permitida, use:
+    python importar_exercicios_mit.py
+Mantenha os arquivos de licença e NOTICE do dataset. Não baixe imagens/GIFs.
 
-5.4 Acessar a página de teste de autenticação
+E) TESTES
+---------
+Na pasta raiz (Windows): .\testar.ps1
+Na pasta ia_academia (com venv ativado):
+    python -m unittest discover -s tests -p "test_*.py" -v
 
-    http://localhost:5000/teste-auth
+Testes usam mocks para serviços externos, mas dependem das bibliotecas Python.
+Eles NÃO substituem testes reais com MySQL e com Gemini.
 
-Também é possível clicar no botão "Entrar" no canto superior direito da
-interface principal (http://localhost:5000/).
+F) SOLUÇÃO RÁPIDA DE PROBLEMAS
+------------------------------
+- requirements.txt não encontrado: você está na pasta errada. Use instalar pela raiz
+  como em (A), ou entre em ia_academia antes de 'pip install -r requirements.txt'.
+- 'No such file or directory: traduzir_exercicios.py': entre em ia_academia.
+- 'Access denied' no MySQL: confira DB_USER/DB_PASSWORD no .env, serviço ativo
+  e privilégios no banco fitfatec.
+- 'Table already exists': não execute o SQL de criação novamente em banco existente.
+- Flask sem rota ou sem CSS após alteração: reinicie o servidor e pressione Ctrl+F5.
+- Kiara em modo offline: confira GEMINI_API_KEY no .env, internet, modelo e cotas da API.
+- 'ModuleNotFoundError': repita .\configurar.ps1; não use Python global por engano.
+- 'InconsistentVersionWarning' em modelo_evasao.pkl: copie seu modelo como backup
+  e, com o venv ativo em ia_academia, execute gerar_dados.py e treinar_modelo.py
+  para recriar SOMENTE o modelo sintético com a versão local do scikit-learn.
+- Arquivos antigos em venv/, .git/ e __pycache__/ NÃO devem ser copiados
+  do computador de outra pessoa; são locais e recriáveis.
 
-A matrícula (ANO + id com 4 dígitos, ex.: 20260001) é gerada no cadastro e
-usada no painel "Agendar aula".
-
-A página de teste permite: cadastro, login, consulta de usuário conectado e
-logout, consumindo as rotas Flask existentes.
-
---------------------------------------------------------------------------------
-6. EXECUÇÃO DOS TESTES UNITÁRIOS
---------------------------------------------------------------------------------
-
-Na pasta `FitFATEC\ia_academia\`, com o venv ativado:
-
-    python -m unittest test_auth_utils.py test_cadastro.py test_login.py test_session.py test_agendamento.py test_assistente.py -v
-
-Os testes usam mock para módulos externos (assistente e mysql), então
-não exigem banco real nem chave de API para serem executados.
-
---------------------------------------------------------------------------------
-7. NOTAS
---------------------------------------------------------------------------------
-
-- O modo debug do Flask fica desligado por padrão; para ligar: FLASK_DEBUG=1.
-  Não use em produção.
-- O ambiente virtual `venv` não deve ser versionado no GitHub.
-- O modelo `modelo_evasao.pkl` e os dados `dados/alunos.csv` são gerados
-  localmente e não devem ser versionados.
-- Sem `GEMINI_API_KEY`, a Kiara responde em MODO OFFLINE (regras e catálogo de
-  treinos), então o protótipo funciona na demonstração mesmo sem internet.
-- As senhas de banco e as chaves de API nunca devem ser inseridas neste
-  documento nem commitadas no repositório.
+G) OBSERVAÇÕES
+-------------
+- O app.py é um protótipo alternativo Streamlit; não é necessário para Flask.
+  Para utilizá-lo, instale 'pip install -r requirements-streamlit.txt' e execute
+  'streamlit run app.py' a partir de ia_academia.
+- FLASK_DEBUG=1 apenas no desenvolvimento; nunca em produção.
+- Um servidor Flask local não é hospedagem de produção nem substitui segurança
+  de deploy. O banco MySQL e os agendamentos exigem testes de integração.
+- Não versionar .env, API keys, credenciais nem arquivos locais de usuário.

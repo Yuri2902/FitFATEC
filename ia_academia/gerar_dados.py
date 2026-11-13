@@ -1,4 +1,7 @@
-import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
 import numpy as np
 import pandas as pd
 
@@ -21,7 +24,7 @@ risco = (
 )
 df["desistiu"] = (risco > risco.median()).astype(int)
 
-os.makedirs("dados", exist_ok=True)
-df.to_csv("dados/alunos.csv", index=False)
+(BASE_DIR / "dados").mkdir(exist_ok=True)
+df.to_csv(BASE_DIR / "dados" / "alunos.csv", index=False)
 print("Arquivo dados/alunos.csv criado com", n, "alunos.")
 print(df.head())

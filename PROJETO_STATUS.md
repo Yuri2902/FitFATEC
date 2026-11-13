@@ -1,146 +1,53 @@
-# FitFATEC — Status do Projeto
+# FitFATEC — Status do projeto
 
-**Projeto:** FitFATEC — Assistente Inteligente para Academia  
-**Última atualização:** 11/11/2026  
-**Situação:** Backend com autenticação implementado e testado com MySQL real; frontend principal operacional; banco integrado; rotas públicas mantidas (/api/risco e /api/chat sem autenticação por enquanto).
+**Atualizado:** 13/11/2026 (reorganização sobre o ZIP recebido).  
+**Estado:** protótipo Flask/HTML funcional segundo os testes manuais apresentados; nesta revisão houve reorganização de arquivos e atualização de documentação, **sem migração do banco ou troca do algoritmo da IA**.
 
----
+## Funcionalidades encontradas no código
 
-## 1. Objetivo e Estrutura do Projeto
-
-### Objetivo
-Sistema para academia que combina previsão de risco de desistência (machine learning com scikit-learn) com chatbot baseado em IA generativa (Google Gemini), com persona **Kiara**, montando treinos personalizados e ajustando o tom da conversa conforme o risco de desistência do aluno.
-
-### Estrutura de diretórios
-
-```
-FitFATEC/
-├── ia_academia/              # Backend Python + Flask + IA
-│   ├── servidor.py           # Servidor Flask com rotas e autenticação
-│   ├── assistente.py         # Chatbot Claude + modelo de risco de desistência
-│   ├── auth_utils.py         # Utilitários de senha (hash/verificação) e validação de cadastro
-│   ├── gerar_dados.py        # Gera dados fictícios de alunos
-│   ├── treinar_modelo.py     # Treina modelo RandomForest de evasão
-│   ├── app.py                # Interface Streamlit (alternativa)
-│   ├── requirements.txt      # Dependências Python
-│   ├── test_auth_utils.py    # Testes unitários de auth (6 testes)
-│   ├── test_cadastro.py      # Testes de cadastro (6 testes)
-│   ├── test_login.py         # Testes de login (4 testes)
-│   ├── test_session.py       # Testes de sessão/logout (5 testes)
-│   ├── modelo_evasao.pkl     # Modelo treinado (gerado localmente)
-│   └── dados/                # Dados fictícios (gerado localmente)
-├── bdd/                      # Banco de dados
-│   └── bd_fitfatec.sql       # Esquema SQL (MySQL)
-├── documentacao/
-│   └── requisitos_ia.pdf     # Requisitos acadêmicos
-├── como_executar/
-│   └── LEIA-ME.txt           # Instruções de execução
-├── public/
-│   ├── index.html            # Frontend principal (chat + risco)
-│   └── teste-auth.html       # Página provisória de teste de autenticação
-└── PROJETO_STATUS.md         # Este documento
-```
-
----
-
-## 2. O que já foi implementado e testado
-
-### ✅ Implementado e testado (Dev 1)
-
-#### Autenticação — implementado e validado
-
-| Componente | Função | Status |
-|------------|--------|--------|
-| `auth_utils.py` | `gerar_hash_senha()`, `verificar_senha()`, `validar_cadastro()` | ✅ 6 testes unitários OK (com mock) |
-| `POST /cadastro` | Valida dados, hash de senha, insere no MySQL, impede e-mail duplicado | ✅ Código implementado + teste manual com banco real |
-| `POST /login` | Busca aluno por e-mail, verifica senha, cria sessão Flask | ✅ Código implementado + teste manual com banco real |
-| `POST /logout` | Limpa sessão | ✅ Código implementado + teste manual com banco real |
-| `GET /api/me` | Consulta usuário autenticado, protegido por `@login_obrigatorio` | ✅ Código implementado + teste manual com banco real |
-| `@login_obrigatorio` | Decorador de proteção de rotas por sessão | ✅ Implementado |
-| `app.secret_key` | Via variável de ambiente `SECRET_KEY` (fallback `os.urandom(24)`) | ✅ Implementado |
-
-**Testes automatizados (unitários com mock):** 21 testes passando
-(`test_auth_utils.py`, `test_cadastro.py`, `test_login.py`, `test_session.py`).
-Esses testes mockam `assistente` e `mysql`, não exigem banco real.
-
-**Testes manuais com banco MySQL real:** cadastro, login, sessão e logout
-executados com sucesso contra o MySQL local, confirmando que as rotas de
-autenticação se integram corretamente ao banco `fitfatec`.
-
-#### Servidor Flask existente (preservado)
-
-| Rota | Método | Função | Status |
-|------|--------|--------|--------|
-| `/` | GET | Serve `public/index.html` (caminho absoluto corrigido) | ✅ Existente |
-| `/health` | GET | Status do servidor | ✅ Implementado |
-| `/teste-auth` | GET | Serve página provisória de teste de autenticação | ✅ Implementado |
-| `/api/risco` | POST | Risco de desistência (funciona sem chave da IA) | ✅ Existente |
-| `/api/chat` | POST | Kiara (Gemini; modo offline sem `GEMINI_API_KEY`) | ✅ Existente |
-
-#### Banco de dados — integrado e testado com MySQL real
-
-- `bd_fitfatec.sql`: tabela `aluno` estendida com `senha_hash`, `papel`, `created_at`, `updated_at`; tabelas `frequencia`, `exercicio`, `treino` preservadas
-- `data_criacao` corrigida de `DATE` para `DATETIME` (compatível com `DEFAULT CURRENT_TIMESTAMP`)
-- Cadastro, login, sessão e logout testados com sucesso no banco MySQL real
-
-#### Frontend
-
-- `public/index.html`: frontend principal com botão "Entrar" direcionando para `/teste-auth`
-- `public/teste-auth.html`: página provisória de autenticação (cadastro, login, consultar usuário, logout) com feedback visual por ação
-
----
-
-## 3. Entregas da atividade avaliativa (atualizado em 11/11/2026)
-
-| Entregável do enunciado | Situação | Onde |
+| Recurso | Estado no código | Validação |
 |---|---|---|
-| Documento do projeto (descrição, objetivos, arquitetura, tecnologias) | ✅ | `documentacao/DOCUMENTO_PROJETO.md` |
-| Persona digital (nome, idade, tom, estilo, vestimenta, traços físicos) | ✅ | `DOCUMENTO_PROJETO.md` §1.1 e prompt em `assistente.py` |
-| Imagem da assistente gerada por IA | ⏳ ilustração provisória (`public/img/kiara.svg`); gerar a final com ferramenta de IA | prompt em `DOCUMENTO_PROJETO.md` §1.2 |
-| Interface conversacional + protótipo navegável | ✅ | `public/index.html` |
-| Agendar aula, série, aquecimento, treino principal/secundário, nível | ✅ | `servidor.py`, `catalogo.py`, `assistente.py` |
-| Fluxos de conversa documentados (mín. 5) | ✅ 6 fluxos | `documentacao/FLUXOS_CONVERSA.md` e `test_assistente.py` |
-| Precificação | ✅ estimativa | `documentacao/PRECIFICACAO.md` |
-| Demonstração do chatbot (vídeo ou apresentação) | ⏳ gravar/apresentar | — |
-| Testes automatizados | ✅ 39 testes | `ia_academia/test_*.py` |
+| Cadastro, login, sessão e logout | Implementado (Flask + MySQL) | Testes automatizados com mocks; MySQL real não validado neste ambiente |
+| Matrícula gerada no cadastro e usada pela sessão | Implementado | Verificar manualmente com login real |
+| Kiara com Gemini e fallback offline | Implementado | Gemini real depende de chave/serviço externo; testes de lógica com mocks |
+| Catálogo de exercícios MIT | JSON local + avisos de licença | 1.324 registros no arquivo de origem; integridade técnica/nomes requerem revisão |
+| Nomes de exercícios em português | Arquivo local por ID + tradutor Gemini opcional | Parcial: tradução automática do restante exige execução e revisão |
+| Plano temporário da Kiara | `plano_kiara.py`, estado na sessão | Não há salvamento de plano em MySQL |
+| Chat com campo fixo | CSS e `visual.js` | Capturas de teste; responsividade deve continuar sendo verificada |
+| Agendar aula | Formulário + rotas + tabela MySQL | Testes de rota com mocks; testar com MySQL real |
+| Risco de desistência | Modelo RandomForest treinado com dados sintéticos | Apenas demonstração; não representa previsão clínica/comercial confiável |
+| Página de acesso | `public/pages/conta.html`, rotas `/conta` e `/teste-auth` | Tela provisória; redesenho UX pendente |
+| Testes Python | `ia_academia/tests/`, comando `testar.ps1` | Consulte registro de validação da entrega; não afirmar teste de API real |
 
-### Pendências restantes
-- Gerar a imagem final da Kiara com IA e trocar em `index.html`.
-- Gravar o vídeo ou montar a apresentação da demonstração.
-- Validar o agendamento contra o MySQL real (rotas testadas só com mock) e recriar o banco com o novo `bd_fitfatec.sql`.
-- Testar o chat com uma `GEMINI_API_KEY` real e confirmar o nome do modelo em `GEMINI_MODEL`.
+## Refatoração feita nesta revisão
 
----
+- Testes `test_*.py` agrupados em `ia_academia/tests/`; mantidos os nomes dos testes e a suíte `unittest`.
+- Página provisória de login organizada em `public/pages/conta.html`, preservando URL antiga `/teste-auth`.
+- `visual.js` (específico do chat) removido da página de conta para evitar erro por elementos inexistentes.
+- Carregamento centralizado de `.env` via `configuracao.py`/python-dotenv; variáveis já presentes no terminal prevalecem.
+- Script de geração de dados e treinamento usando caminhos relativos ao código, não ao diretório atual.
+- `requirements.txt` corrigido, Streamlit como dependência opcional, comandos PowerShell `configurar.ps1`, `iniciar.ps1`, `testar.ps1`.
+- Guia Claude/Streamlit antigo arquivado sob `documentacao/historico/` para evitar seguir instruções obsoletas.
+- Documentação de projeto, fluxos, checklist do enunciado e premissas de precificação agora incluídas.
+- ZIP de entrega não leva `.git/`, `venv/` nem caches do Python; preserve o repositório Git local do grupo.
 
-## 4. Responsabilidades dos Devs 1 a 5
+## Pendências prioritárias
 
-| Dev | Responsabilidade | Estado atual |
-|-----|------------------|--------------|
-| **Dev 1** | Backend e autenticação — infraestrutura Flask, rotas de auth, validação, hash de senha, sessões, conexão MySQL, testes unitários, página de teste | ✅ Implementado e testado com banco real |
-| **Dev 2** | IA — integração com provedor de IA (Claude/Anthropic), funcionamento do chatbot, chave de API | ⏳ Não verificado |
-| **Dev 3** | Treinos — criação e gerenciamento de planos de exercício | ⏳ Não verificado |
-| **Dev 4** | Frontend — interface web, telas de acesso, apresentação de exercícios, integração com APIs (substituirá `teste-auth.html`) | ⏳ Não verificado |
-| **Dev 5** | Banco de dados — tabelas, relacionamentos, persistência, execução do `bd_fitfatec.sql`, testes de integração com banco | ⏳ Não verificado |
+1. **Testar em Windows + MySQL real**: login, cadastro, matrícula, horários, agendamento e sessão depois de aplicar a revisão.
+2. **Concluir as traduções** do catálogo e validar movimentos ambíguos; manter aviso MIT.
+3. **Persistir planos de treino em MySQL** para a futura página “Meus treinos”.
+4. **Revisar UX da tela de conta** e criar telas de perfil/treinos/agenda; a página atual é provisória.
+5. **Validar requisitos da persona**: desenho gerado por IA e adequação da mascote aos atributos físicos pedidos pelo enunciado.
+6. **Gravar demonstração** e fechar estimativa numérica de precificação.
+7. **Auditar segurança antes de publicar na internet**: CSRF, cookies, autorização de operações, concorrência de horários, políticas de privacidade, chaves/segredos.
 
-*Não há informações confirmadas sobre o progresso dos Devs 2 a 5 neste documento.*
+## Material de referência
 
----
+- `README.md` — início rápido.
+- `como_executar/LEIA-ME.txt` — instalação e erros comuns.
+- `documentacao/requisitos_ia.pdf` — enunciado original.
+- `documentacao/CHECKLIST_ENTREGA.md` — lacunas e evidências reais.
+- `documentacao/DOCUMENTO_PROJETO.md`, `FLUXOS_CONVERSA.md`, `PRECIFICACAO.md` — entregáveis textuais.
+- `documentacao/ATRIBUICOES_EXERCICIOS.md` e `TRADUCOES_E_LICENCA.md` — licenças.
 
-## 5. Integrações necessárias e próximos passos
-
-1. **Dev 4**: substituir `public/teste-auth.html` pelo frontend oficial de autenticação.
-2. **Dev 2**: configurar `GEMINI_API_KEY` para ativar a IA generativa.
-3. **Dev 3**: implementar módulos de treino/plano de exercício.
-
----
-
-### Classificação de status
-
-| Categoria | Critério | Exemplos neste projeto |
-|-----------|----------|------------------------|
-| ✅ Testado (automatizado, com mock) | 21 testes unitários passando, mockam dependências externas | auth_utils, cadastro, login, sessão, logout, /api/me |
-| ✅ Validado manualmente (MySQL real) | Cadastro, login, sessão e logout executados contra banco MySQL local | Rotas `/cadastro`, `/login`, `/logout`, `/api/me` |
-| 📦 Existente sem validação | Código implementado mas não testado contra banco real | — (nenhum no momento) |
-| ⏳ Pendente | Não implementado ou não integrado | Frontend oficial Dev 4, módulos Dev 3, ativação chatbot Dev 2 |
-
----
+**Nota:** não se removeu nenhum módulo de negócio nesta revisão. A interface Streamlit foi mantida como protótipo opcional; os arquivos gerados localmente do modelo permanecem no pacote apenas para facilitar a demonstração, mas estão ignorados por `.gitignore`.

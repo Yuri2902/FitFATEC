@@ -1,7 +1,9 @@
-flask
+# Backend Flask, IA, dados e configuração local
+Flask
+python-dotenv
+mysql-connector-python
+google-genai
 pandas
 numpy
 scikit-learn
 joblib
-google-genai
-mysql-connector-python

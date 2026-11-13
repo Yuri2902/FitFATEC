@@ -1,0 +1,122 @@
+{
+  "0025": {
+    "nome_original": "barbell bench press",
+    "nome_pt": "Supino reto com barra",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0031": {
+    "nome_original": "barbell curl",
+    "nome_pt": "Rosca direta com barra",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "1770": {
+    "nome_original": "biceps leg concentration curl",
+    "nome_pt": "Rosca concentrada de bíceps com resistência da perna",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "1769": {
+    "nome_original": "bodyweight side lying biceps curl",
+    "nome_pt": "Rosca de bíceps deitado de lado com peso corporal",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "1373": {
+    "nome_original": "bodyweight standing calf raise",
+    "nome_pt": "Elevação de panturrilhas em pé",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "1631": {
+    "nome_original": "cable concentration curl",
+    "nome_pt": "Rosca concentrada na polia",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0868": {
+    "nome_original": "cable curl",
+    "nome_pt": "Rosca direta na polia",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0195": {
+    "nome_original": "cable preacher curl",
+    "nome_pt": "Rosca Scott na polia",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "1326": {
+    "nome_original": "chin-up",
+    "nome_pt": "Barra fixa com pegada supinada",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "3769": {
+    "nome_original": "curtsey squat",
+    "nome_pt": "Agachamento com passada cruzada",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0289": {
+    "nome_original": "dumbbell bench press",
+    "nome_pt": "Supino reto com halteres",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0294": {
+    "nome_original": "dumbbell biceps curl",
+    "nome_pt": "Rosca direta com halteres",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0313": {
+    "nome_original": "dumbbell hammer curl",
+    "nome_pt": "Rosca martelo com halteres",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0334": {
+    "nome_original": "dumbbell lateral raise",
+    "nome_pt": "Elevação lateral com halteres",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0413": {
+    "nome_original": "dumbbell squat",
+    "nome_pt": "Agachamento com halteres",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0447": {
+    "nome_original": "ez barbell curl",
+    "nome_pt": "Rosca direta com barra W",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0652": {
+    "nome_original": "pull-up",
+    "nome_pt": "Barra fixa com pegada pronada",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0662": {
+    "nome_original": "push-up",
+    "nome_pt": "Flexão de braços",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "0814": {
+    "nome_original": "triceps dip",
+    "nome_pt": "Mergulho para tríceps",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  },
+  "1460": {
+    "nome_original": "walking lunge",
+    "nome_pt": "Afundo caminhando",
+    "origem": "dicionario_revisado",
+    "revisar": false
+  }
+}

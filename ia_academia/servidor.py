@@ -1,8 +1,9 @@
 import os
+import configuracao  # carrega .env ANTES de importar assistente e ler DB_CONFIG
 from datetime import date, datetime, timedelta
 from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, session
-from assistente import responder, risco_de_desistir
+from assistente import responder_com_plano, risco_de_desistir
 import catalogo
 from auth_utils import validar_cadastro, gerar_hash_senha, verificar_senha
 import mysql.connector
@@ -90,15 +91,13 @@ def health():
 
 @app.get("/")
 def pagina_inicial():
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    public_dir = os.path.join(project_root, "public")
-    return send_from_directory(public_dir, "index.html")
+    return send_from_directory(PUBLIC_DIR, "index.html")
 
 
-@app.get("/teste-auth")
-def pagina_teste_auth():
-    public_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
-    return send_from_directory(public_dir, "teste-auth.html")
+@app.get("/conta")
+@app.get("/teste-auth")  # Compatibilidade com links antigos
+def pagina_conta():
+    return send_from_directory(os.path.join(PUBLIC_DIR, "pages"), "conta.html")
 
 
 @app.post("/cadastro")
@@ -164,6 +163,7 @@ def login():
     if not verificar_senha(senha, aluno["senha_hash"]):
         return jsonify({"erro": "Credenciais inválidas."}), 401
 
+    session.pop("plano_kiara", None)  # Impede aproveitar plano de login anterior.
     session["usuario"] = {
         "id_aluno": aluno["id_aluno"],
         "nome": aluno["nome"],
@@ -205,17 +205,38 @@ def api_risco():
 
 
 @app.post("/api/chat")
+@login_obrigatorio
 def api_chat():
     corpo = request.get_json(silent=True) or {}
     aluno = limpar_aluno(corpo.get("aluno", {}))
     historico = corpo.get("historico", [])
-    if aluno is None or not historico:
+    if (aluno is None or not isinstance(historico, list) or not historico
+            or len(historico) > 30
+            or any(not isinstance(m, dict)
+                   or m.get("role") not in ("user", "assistant")
+                   or not isinstance(m.get("content"), str)
+                   or not 1 <= len(m["content"]) <= 3000 for m in historico)
+            or historico[-1]["role"] != "user"):
         return jsonify({"erro": "Dados inválidos"}), 400
+    # Somente o servidor identifica o aluno; nunca confie em matrícula enviada no JSON.
+    usuario = session["usuario"]
+    aluno["nome"] = usuario.get("nome", "Aluno")
     try:
-        resposta = responder(aluno, historico)
-        return jsonify({"resposta": resposta, "risco": float(risco_de_desistir(aluno))})
+        resposta, modo, plano = responder_com_plano(aluno, historico, session.get("plano_kiara"))
+        # A sessão é assinada pelo Flask, isolada por usuário autenticado.
+        session["plano_kiara"] = plano
+        return jsonify({"resposta": resposta, "modo": modo,
+                        "risco": float(risco_de_desistir(aluno))})
     except Exception:
         return jsonify({"erro": "A Kiara não conseguiu responder agora. Tente novamente."}), 500
+
+
+@app.post("/api/chat/limpar")
+@login_obrigatorio
+def api_limpar_chat():
+    """Descarta o plano do chat sem apagar o login do aluno."""
+    session.pop("plano_kiara", None)
+    return jsonify({"mensagem": "Conversa reiniciada."}), 200
 
 
 # ---------------------------------------------------------------- Treinos
@@ -298,15 +319,17 @@ def api_horarios():
 
 
 @app.post("/api/agendar")
+@login_obrigatorio
 def api_agendar():
     corpo = request.get_json(silent=True) or {}
-    matricula = str(corpo.get("matricula", "")).strip()
+    # O ID do aluno vem exclusivamente da sessão de login.
+    id_aluno = session["usuario"].get("id_aluno")
     horario = str(corpo.get("horario", "")).strip()
     modalidade = str(corpo.get("modalidade", "musculação")).strip().lower()
     data_aula = _parse_data(corpo.get("data", ""))
 
-    if not matricula.isdigit() or not 4 <= len(matricula) <= 12:
-        return jsonify({"erro": "Matrícula inválida."}), 400
+    if not isinstance(id_aluno, int) or id_aluno <= 0:
+        return jsonify({"erro": "Sessão inválida. Entre novamente."}), 401
     if data_aula is None:
         return jsonify({"erro": "Data inválida. Use o formato AAAA-MM-DD."}), 400
     hoje = date.today()
@@ -318,12 +341,9 @@ def api_agendar():
         return jsonify({"erro": "Modalidade inválida."}), 400
 
     try:
-        aluno = buscar_aluno_por_matricula(matricula)
-        if aluno is None:
-            return jsonify({"erro": "Matrícula não encontrada."}), 404
         if contar_ocupacao(data_aula).get(horario, 0) >= CAPACIDADE_POR_HORARIO:
             return jsonify({"erro": "Horário lotado. Escolha outro horário."}), 409
-        id_ag = inserir_agendamento(aluno["id_aluno"], data_aula, horario, modalidade)
+        id_ag = inserir_agendamento(id_aluno, data_aula, horario, modalidade)
     except Error as e:
         if getattr(e, "errno", None) == 1062:  # UNIQUE (aluno, data, horário)
             return jsonify({"erro": "Você já tem aula agendada nesse horário."}), 409

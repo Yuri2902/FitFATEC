@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Teste de Autenticação - FitFATEC</title>
-<link rel="stylesheet" href="CSS.css">
+<title>Minha conta — FitFATEC</title>
+<link rel="stylesheet" href="/CSS.css">
 </head>
 <body>
 <header>
-  <div>🏋️ Teste de Autenticação</div>
+  <div>🏋️ Minha conta · FitFATEC</div>
   <button class="btn-secundario" onclick="voltar()">Voltar ao início</button>
 </header>
 
@@ -43,7 +43,7 @@
   </div>
 
   <div class="aviso">
-    Página provisória apenas para testes de autenticação. Será substituída pelo frontend oficial do Dev 4.
+    Tela de acesso provisória. Cadastro e login já funcionam; o redesign visual ainda está planejado.
   </div>
 </main>
 
@@ -103,6 +103,8 @@ async function login() {
     const d = await r.json();
     if (r.ok) {
       mostrar("msgLogin", "Login realizado: " + d.usuario.nome, "sucesso");
+      // A sessão já foi criada no servidor; o painel carregará a matrícula automaticamente.
+      window.location.href = "/";
     } else {
       mostrar("msgLogin", d.erro || "Erro no login", "erro");
     }
@@ -150,6 +152,6 @@ function voltar() {
   window.location.href = "/";
 }
 </script>
-<script src="visual.js"></script>
+
 </body>
 </html>

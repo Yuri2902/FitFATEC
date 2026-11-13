@@ -1,14 +1,7 @@
-import sys
 import unittest
 from datetime import date, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-sys.modules["assistente"] = MagicMock()
-sys.modules["assistente"].responder = MagicMock()
-sys.modules["assistente"].risco_de_desistir = MagicMock(return_value=0.1)
-sys.modules["mysql"] = MagicMock()
-sys.modules["mysql.connector"] = MagicMock()
-sys.modules["mysql.connector"].Error = Exception
 
 import servidor
 from servidor import app
@@ -19,14 +12,23 @@ AMANHA = str(date.today() + timedelta(days=1))
 class TestAgendamento(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["usuario"] = {"id_aluno": 17, "nome": "Ana", "matricula": "20260017", "papel": "aluno"}
 
     def agendar(self, **extra):
-        corpo = {"matricula": "20260001", "data": AMANHA, "horario": "18:00", "modalidade": "musculação"}
+        corpo = {"data": AMANHA, "horario": "18:00", "modalidade": "musculação"}
         corpo.update(extra)
         return self.client.post("/api/agendar", json=corpo)
 
-    def test_matricula_invalida(self):
-        self.assertEqual(self.agendar(matricula="abc").status_code, 400)
+    def test_sem_login(self):
+        resp = app.test_client().post("/api/agendar", json={
+            "data": AMANHA, "horario": "18:00", "modalidade": "musculação"})
+        self.assertEqual(resp.status_code, 401)
+
+    def test_sessao_sem_id_aluno(self):
+        with self.client.session_transaction() as sess:
+            sess["usuario"] = {"nome": "Ana"}
+        self.assertEqual(self.agendar().status_code, 401)
 
     def test_data_passada(self):
         ontem = str(date.today() - timedelta(days=1))
@@ -38,22 +40,23 @@ class TestAgendamento(unittest.TestCase):
     def test_modalidade_invalida(self):
         self.assertEqual(self.agendar(modalidade="boxe").status_code, 400)
 
-    @patch.object(servidor, "buscar_aluno_por_matricula", return_value=None)
-    def test_matricula_inexistente(self, _):
-        self.assertEqual(self.agendar().status_code, 404)
-
     @patch.object(servidor, "contar_ocupacao", return_value={"18:00": 10})
-    @patch.object(servidor, "buscar_aluno_por_matricula", return_value={"id_aluno": 1, "nome": "Ana"})
     def test_horario_lotado(self, *_):
         self.assertEqual(self.agendar().status_code, 409)
 
     @patch.object(servidor, "inserir_agendamento", return_value=7)
     @patch.object(servidor, "contar_ocupacao", return_value={})
-    @patch.object(servidor, "buscar_aluno_por_matricula", return_value={"id_aluno": 1, "nome": "Ana"})
     def test_agendamento_ok(self, *_):
         resp = self.agendar()
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.get_json()["id_agendamento"], 7)
+
+    @patch.object(servidor, "inserir_agendamento", return_value=7)
+    @patch.object(servidor, "contar_ocupacao", return_value={})
+    def test_matricula_falsa_no_json_ignorada(self, _, inserir):
+        resp = self.agendar(matricula="20269999")
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(inserir.call_args.args[0], 17)  # ID vem da sessão, não do JSON
 
     @patch.object(servidor, "contar_ocupacao", return_value={"07:00": 4})
     def test_horarios_com_vagas(self, _):

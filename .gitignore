@@ -1,12 +1,25 @@
-# Ambiente virtual
+# Ambientes e segredos locais (não enviar ao GitHub)
 venv/
 .venv/
-
-# Arquivos temporários do Python
-__pycache__/
-*.pyc
-
-# Chaves e configurações privadas
 .env
 .env.*
 !.env.example
+*.key
+
+# Python / IDE / testes
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.vscode/.ropeproject
+
+# Dados e modelo sintéticos reproduzíveis (gerados localmente)
+ia_academia/modelo_evasao.pkl
+ia_academia/dados/alunos.csv
+
+# Temporários, logs e backup
+*.log
+*.tmp
+*.bak
+*.zip
+.DS_Store

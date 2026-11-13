@@ -1,10 +1,14 @@
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
 import pandas as pd
 import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 
-df = pd.read_csv("dados/alunos.csv")
+df = pd.read_csv(BASE_DIR / "dados" / "alunos.csv")
 
 colunas = ["idade", "frequencia_semanal", "meses_matricula", "faltas_ultimo_mes"]
 X = df[colunas]
@@ -24,5 +28,5 @@ print(classification_report(y_teste, previsoes))
 for nome, importancia in zip(colunas, modelo.feature_importances_):
     print(f"{nome}: {importancia:.2f}")
 
-joblib.dump(modelo, "modelo_evasao.pkl")
+joblib.dump(modelo, BASE_DIR / "modelo_evasao.pkl")
 print("Modelo salvo em modelo_evasao.pkl")

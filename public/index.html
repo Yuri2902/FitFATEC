@@ -5,16 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kiara — Assistente Virtual FitFATEC</title>
 <link rel="stylesheet" href="CSS.css">
+<link rel="stylesheet" href="kiara-ajustes.css">
 </head>
 <body>
 <header>
   <div class="marca"><img src="img/kiara.svg" alt="Kiara, mascote da FitFATEC" width="40" height="40"> <span>Kiara · FitFATEC</span></div>
-  <a class="btn btn-claro" href="/teste-auth">Entrar</a>
+  <a class="btn btn-claro" id="linkConta" href="/conta">Entrar</a>
 </header>
 
 <main class="app">
   <aside class="painel">
     <h2>Dados do aluno</h2>
+    <p id="estadoSessao" role="status">Verificando sua sessão...</p>
 
     <label for="idade">Idade</label>
     <input id="idade" type="number" min="14" max="90" value="25">
@@ -51,7 +53,7 @@
 
     <div class="acoes-painel">
       <button type="button" id="btnSerie">Ver minha série</button>
-      <button type="button" id="btnAgendar" class="btn-secundario">Agendar aula</button>
+      <button type="button" id="btnAgendar" class="btn-secundario" disabled>Agendar aula</button>
     </div>
   </aside>
 
@@ -59,9 +61,13 @@
     <div id="mensagens" aria-live="polite">
       <div class="msg bot">Oi! Eu sou a Kiara, assistente virtual da FitFATEC, 24h por dia. 🐆 Posso agendar sua aula, montar sua série, explicar o aquecimento e os treinos principal e secundário. Como posso ajudar?</div>
     </div>
+    <div class="informacoes-kiara">
+      <button type="button" id="btnSobreKiara" class="btn-sobre-kiara" aria-haspopup="dialog">Sobre a Kiara <span aria-hidden="true">ⓘ</span></button>
+      <span id="modoKiara" role="status" aria-live="polite" hidden></span>
+    </div>
     <form id="formChat">
       <input id="pergunta" type="text" placeholder="Digite sua mensagem..." autocomplete="off" required aria-label="Mensagem">
-      <button id="enviar" type="submit">Enviar</button>
+      <button id="enviar" type="submit" disabled>Enviar</button>
     </form>
   </section>
 </main>
@@ -70,6 +76,36 @@
   const camposNumericos = ["idade", "frequencia_semanal", "meses_matricula", "faltas_ultimo_mes"];
   const camposTexto = ["objetivo", "nivel"];
   const historico = [];
+  let usuarioSessao = null;
+
+  async function carregarSessao() {
+    const status = document.getElementById("estadoSessao");
+    const link = document.getElementById("linkConta");
+    const enviar = document.getElementById("enviar");
+    const agendar = document.getElementById("btnAgendar");
+    try {
+      const r = await fetch("/api/me", { credentials: "same-origin" });
+      const d = await r.json();
+      usuarioSessao = r.ok ? d.usuario : null;
+      if (usuarioSessao) {
+        status.textContent = "Olá, " + usuarioSessao.nome +
+          "! Matrícula: " + (usuarioSessao.matricula || "em atualização");
+        link.textContent = "Minha conta";
+        enviar.disabled = false;
+        agendar.disabled = false;
+      } else {
+        status.textContent = "Entre na sua conta para conversar e agendar aulas.";
+        link.textContent = "Entrar";
+        enviar.disabled = true;
+        agendar.disabled = true;
+      }
+    } catch (_) {
+      usuarioSessao = null;
+      status.textContent = "Não foi possível verificar sua sessão. Atualize a página.";
+      enviar.disabled = true;
+      agendar.disabled = true;
+    }
+  }
 
   // Lê os campos; devolve null se algum número estiver vazio ou fora do limite
   function lerAluno() {
@@ -129,8 +165,11 @@
     div.className = "msg " + tipo;
     div.textContent = texto;            // textContent evita injeção de HTML
     const area = document.getElementById("mensagens");
+    // A nova resposta não deve arrancar o usuário de mensagens antigas.
+    const estavaNoFim = area.scrollHeight - area.scrollTop - area.clientHeight < 120;
     area.appendChild(div);
-    area.scrollTop = area.scrollHeight;
+    // Se o próprio usuário enviou uma mensagem, ele espera vê-la no fim.
+    if (tipo === "user" || estavaNoFim) area.scrollTop = area.scrollHeight;
     return div;
   }
 
@@ -140,6 +179,10 @@
     const botao = document.getElementById("enviar");
     const texto = campo.value.trim();
     if (!texto) return;
+    if (!usuarioSessao) {
+      adicionarMensagem("Faça login para conversar com a Kiara.", "bot erro");
+      return;
+    }
 
     const aluno = lerAluno();
     if (!aluno) {
@@ -152,21 +195,38 @@
     campo.value = "";
     botao.disabled = true;
     const aguardando = adicionarMensagem("Pensando...", "bot");
+    const indicadorModo = document.getElementById("modoKiara");
+    indicadorModo.hidden = true; // não mostrar o estado da resposta anterior enquanto processa
 
     try {
+      // Limita o histórico para evitar mensagens enormes e manter o chat responsivo.
+      if (historico.length > 20) historico.splice(0, historico.length - 20);
       const { ok, dados } = await chamarApi("/api/chat", { aluno, historico });
-      if (!ok) throw new Error(dados.erro || "Erro no servidor");
+      if (!ok) {
+        if (dados.erro === "Não autenticado.") {
+          await carregarSessao();
+        }
+        throw new Error(dados.erro || "Erro no servidor");
+      }
       aguardando.textContent = dados.resposta;
       historico.push({ role: "assistant", content: dados.resposta });
       mostrarRisco(dados.risco);
+      const estadoKiara = document.getElementById("modoKiara");
+      // Indicador da resposta recebida. Não atribui Gemini a respostas locais.
+      // Informações sobre fornecedores de IA ficam em "Sobre a Kiara".
+      const comIa = dados.modo === "gemini";
+      estadoKiara.hidden = false;
+      estadoKiara.dataset.modo = comIa ? "ia" : "offline";
+      estadoKiara.textContent = comIa ? "IA ativa" : "Modo offline";
     } catch (err) {
       aguardando.textContent = "Ops, algo deu errado: " + err.message;
       aguardando.classList.add("erro");
       historico.pop();                  // remove a pergunta que não foi respondida
     } finally {
-      botao.disabled = false;
+      botao.disabled = !usuarioSessao;
       campo.focus();
-      document.getElementById("mensagens").scrollTop = document.getElementById("mensagens").scrollHeight;
+      // A rolagem do histórico é administrada pelo visual.js,
+      // respeitando quem está lendo mensagens anteriores.
     }
   });
 
@@ -176,13 +236,21 @@
     el.addEventListener("input", atualizarRisco);
   });
   atualizarRisco();
+  carregarSessao();
 </script>
+
+<dialog id="dlgSobreKiara" aria-labelledby="tituloSobreKiara" class="dlg-sobre-kiara">
+  <h2 id="tituloSobreKiara">Sobre a Kiara</h2>
+  <p>A Kiara é a assistente virtual criada para o projeto FitFATEC. Sua experiência, integração com o sistema e seleção de exercícios são desenvolvidas pela equipe do projeto.</p>
+  <p>Para conversar, ela utiliza modelos de inteligência artificial Gemini, fornecidos pelo Google, e uma biblioteca licenciada de exercícios. Quando a IA não está disponível, pode utilizar respostas predefinidas.</p>
+  <p>As sugestões de treino não substituem orientação profissional. Os exercícios incluídos no catálogo ampliado seguem os avisos de licença e atribuição documentados no projeto.</p>
+  <button type="button" id="fecharSobreKiara">Fechar</button>
+</dialog>
 
 <dialog id="dlgAgenda" aria-labelledby="tituloAgenda">
   <form id="formAgenda" method="dialog">
     <h2 id="tituloAgenda">Agendar aula</h2>
-    <label for="agMatricula">Matrícula</label>
-    <input id="agMatricula" type="text" inputmode="numeric" pattern="\d{4,12}" placeholder="Ex.: 20260001" required>
+    <p id="agAluno" role="status">Sua conta será identificada automaticamente.</p>
     <label for="agData">Data</label>
     <input id="agData" type="date" required>
     <label for="agModalidade">Modalidade</label>
@@ -200,6 +268,10 @@
 </dialog>
 
 <script>
+  const sobreKiara = document.getElementById("dlgSobreKiara");
+  document.getElementById("btnSobreKiara").addEventListener("click", () => sobreKiara.showModal());
+  document.getElementById("fecharSobreKiara").addEventListener("click", () => sobreKiara.close());
+
   // ---- Minha série (aquecimento + treino principal + secundário) ----
   function formatarSerie(s) {
     const linhas = x => x.exercicios.map(e =>
@@ -249,6 +321,9 @@
   }
 
   document.getElementById("btnAgendar").addEventListener("click", () => {
+    if (!usuarioSessao) { adicionarMensagem("Entre na sua conta para agendar uma aula.", "bot erro"); return; }
+    document.getElementById("agAluno").textContent = "Agendamento para " +
+      usuarioSessao.nome + " (matrícula " + (usuarioSessao.matricula || "indisponível") + ")";
     const hoje = new Date(), max = new Date(); max.setDate(max.getDate() + 30);
     agData.min = iso(hoje); agData.max = iso(max);
     feedback("", "");
@@ -263,7 +338,6 @@
     botao.disabled = true;
     try {
       const { ok, dados } = await chamarApi("/api/agendar", {
-        matricula: document.getElementById("agMatricula").value.trim(),
         data: agData.value,
         horario: agHorario.value,
         modalidade: document.getElementById("agModalidade").value

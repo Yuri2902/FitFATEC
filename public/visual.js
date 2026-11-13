@@ -74,15 +74,51 @@
   }
   observadorRisco.observe(textoRisco, { childList: true, characterData: true, subtree: true });
 
-  /* ---------- Chat: "digitando…" e rolagem suave ---------- */
+  /* ---------- Chat: histórico rolável, campo ancorado ---------- */
   const area = document.getElementById("mensagens");
   const saudacao = area.firstElementChild ? area.firstElementChild.textContent : "";
+
+  // A área de mensagens ocupa o espaço restante da coluna do chat.
+  // A barra de sugestões e o campo de texto ficam fora dessa rolagem.
+  const viewport = document.createElement("div");
+  viewport.className = "mensagens-viewport";
+  area.before(viewport);
+  viewport.appendChild(area);
+
+  const voltarFim = document.createElement("button");
+  voltarFim.type = "button";
+  voltarFim.className = "btn-voltar-fim";
+  voltarFim.textContent = "↓ Voltar à conversa";
+  voltarFim.setAttribute("aria-label", "Ir para as últimas mensagens");
+  voltarFim.hidden = true;
+  viewport.appendChild(voltarFim);
+
+  const pertoDoFim = () => area.scrollHeight - area.scrollTop - area.clientHeight <= 110;
+  let seguindoFim = true;
+  function atualizarEstadoRolagem() {
+    seguindoFim = pertoDoFim();
+    voltarFim.hidden = seguindoFim;
+  }
+  area.addEventListener("scroll", atualizarEstadoRolagem, { passive: true });
+  voltarFim.addEventListener("click", () => {
+    seguindoFim = true;
+    area.scrollTo({ top: area.scrollHeight, behavior: reduzirMovimento ? "auto" : "smooth" });
+    voltarFim.hidden = true;
+  });
 
   new MutationObserver(() => {
     area.querySelectorAll(".msg.bot").forEach(m => {
       m.classList.toggle("digitando", m.textContent.trim() === "Pensando...");
     });
-    area.scrollTo({ top: area.scrollHeight, behavior: reduzirMovimento ? "auto" : "smooth" });
+    // Só rolar automaticamente se a pessoa já estava no final.
+    // Ao ler mensagens antigas, oferecemos o botão para voltar.
+    if (seguindoFim) {
+      requestAnimationFrame(() => {
+        if (seguindoFim) area.scrollTop = area.scrollHeight;
+      });
+    } else {
+      voltarFim.hidden = false;
+    }
   }).observe(area, { childList: true, subtree: true, characterData: true });
 
   /* ---------- Sugestões rápidas e limpar conversa ---------- */
@@ -111,9 +147,20 @@
   limpar.type = "button";
   limpar.className = "chip chip-limpar";
   limpar.textContent = "Limpar conversa";
-  limpar.addEventListener("click", () => {
+  limpar.addEventListener("click", async () => {
     if (enviar.disabled) return;
+    if (typeof usuarioSessao !== "undefined" && usuarioSessao) {
+      try {
+        const r = await fetch("/api/chat/limpar", { method: "POST", credentials: "same-origin" });
+        if (!r.ok) throw new Error("Falha ao limpar o plano no servidor.");
+      } catch (_) {
+        // Não apague o histórico se o plano anterior ainda estiver no servidor.
+        return;
+      }
+    }
     if (typeof historico !== "undefined") historico.length = 0;   // array do script principal
+    const modo = document.getElementById("modoKiara");
+    if (modo) { modo.hidden = true; modo.textContent = ""; delete modo.dataset.modo; }
     area.textContent = "";
     const div = document.createElement("div");
     div.className = "msg bot";

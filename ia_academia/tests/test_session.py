@@ -1,14 +1,6 @@
-import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-# Mocka módulos com dependências externas antes de importar servidor
-sys.modules["assistente"] = MagicMock()
-sys.modules["assistente"].responder = MagicMock()
-sys.modules["assistente"].risco_de_desistir = MagicMock(return_value=0.1)
-sys.modules["mysql"] = MagicMock()
-sys.modules["mysql.connector"] = MagicMock()
-sys.modules["mysql.connector"].Error = Exception
 
 from servidor import app
 
