@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meus Treinos — FitFATEC</title>
+  <link rel="stylesheet" href="../CSS.css">
+  <script src="../visual.js" defer></script>
+  <style>
+    .fit-table-exercicios {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    .fit-table-exercicios th {
+      text-align: left;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--borda);
+      white-space: nowrap;
+    }
+
+    .fit-table-exercicios th:nth-child(1) {
+      width: 47%;
+    }
+
+    .fit-table-exercicios th:nth-child(2) {
+      width: 14%;
+      text-align: center;
+    }
+
+    .fit-table-exercicios th:nth-child(3) {
+      width: 21%;
+      text-align: center;
+    }
+
+    .fit-table-exercicios th:nth-child(4) {
+      width: 18%;
+      text-align: right;
+    }
+
+    .fit-table-exercicios td {
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      vertical-align: middle;
+    }
+
+    .fit-table-exercicios td:nth-child(2),
+    .fit-table-exercicios td:nth-child(3) {
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .fit-table-exercicios td:nth-child(4) {
+      text-align: right;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
+
+    .ex-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background-color: var(--bg-input);
+      border: 1px solid var(--borda-forte);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-primary);
+      flex-shrink: 0;
+    }
+
+    .fit-empty-state {
+      text-align: center;
+      padding: 36px 20px;
+      border: 1px dashed var(--borda-forte);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.015);
+      color: var(--text-secondary);
+    }
+
+    .fit-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 10, 14, 0.78);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+      animation: fadeInModal 0.18s ease-out;
+    }
+
+    .fit-modal-backdrop.aberto {
+      display: flex;
+    }
+
+    .fit-modal-card {
+      width: 100%;
+      max-width: 430px;
+      background: var(--bg-card, #141820);
+      border: 1px solid var(--borda-forte, rgba(255, 255, 255, 0.1));
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      animation: slideUpModal 0.2s ease-out;
+    }
+
+    .fit-modal-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 107, 26, 0.14);
+      border: 1px solid rgba(255, 107, 26, 0.35);
+      color: #FF6B1A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    @keyframes fadeInModal {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUpModal {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="fit-navbar">
+    <div class="fit-nav-left">
+      <a href="/index.html" class="fit-brand">
+        <img src="../img/kiara-logo.png" alt="Kiara">
+        <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
+      </a>
+      <div class="fit-divider-v"></div>
+      <nav class="fit-nav-links">
+        <a href="/index.html" class="fit-nav-link">Início</a>
+        <a href="/pages/perfil.html" class="fit-nav-link">Meu perfil</a>
+        <a href="/pages/treinos.html" class="fit-nav-link ativo">Meus treinos</a>
+        <a href="/pages/agendamentos.html" class="fit-nav-link">Agendamentos</a>
+      </nav>
+    </div>
+    <div class="fit-nav-right">
+      <div class="fit-divider-v"></div>
+      <a id="navAuthBtn" href="/pages/conta.html" class="fit-btn-auth"><span>Entrar</span></a>
+    </div>
+  </header>
+
+  <main class="fit-container fit-grid-3col">
+    <!-- COLUNA ESQUERDA -->
+    <section class="fit-card" style="align-self: start;">
+      <h1 class="fit-card-title" style="font-size:1.25rem; margin-bottom:6px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
+        </svg>
+        Meus treinos
+      </h1>
+      <p style="font-size:0.86rem; color:var(--text-secondary); margin:0 0 20px;">Organize, acompanhe e evolua com seus
+        treinos.</p>
+
+      <div class="fit-info-row">
+        <span class="fit-info-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M3 10h18" />
+            <path d="m9 16 2 2 4-4" />
+          </svg>
+        </span>
+        <div>
+          <span class="fit-label">Treinos na semana</span>
+          <strong id="statQtdTreinos" style="font-size:1.05rem;">0</strong>
+        </div>
+      </div>
+
+      <div class="fit-info-row">
+        <span class="fit-info-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+            <polyline points="2 17 12 22 22 17" />
+            <polyline points="2 12 12 17 22 12" />
+          </svg>
+        </span>
+        <div>
+          <span class="fit-label">Total de exercícios</span>
+          <strong id="statTotalEx" style="font-size:1.05rem;">0</strong>
+        </div>
+      </div>
+
+      <div class="fit-info-row" style="margin-bottom:22px;">
+        <span class="fit-info-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <polyline points="12 7 12 12 15 14" />
+          </svg>
+        </span>
+        <div>
+          <span class="fit-label">Última atualização</span>
+          <strong id="statUltimaAtt" style="font-size:0.98rem;">Nenhum treino</strong>
+        </div>
+      </div>
+
+      <div class="fit-col-stack" style="gap:10px;">
+        <button type="button" id="btnGerarKiaraEsq" class="fit-btn-outline-orange" style="width:100%;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <rect x="9" y="9" width="6" height="6" />
+            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3" />
+          </svg>
+          <span>Gerar com a Kiara</span>
+        </button>
+
+        <button type="button" id="btnCriarManualEsq" class="fit-btn-dark" style="width:100%;">
+          <span>+ Criar treino manual</span>
+        </button>
+
+        <button type="button" id="btnBibliotecaEsq" class="fit-btn-dark"
+          style="width:100%; justify-content:center; position:relative;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+          </svg>
+          <span>Minha biblioteca</span>
+          <span style="position:absolute; right:16px;">›</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- COLUNA CENTRO -->
+    <section class="fit-col-stack">
+      <div class="fit-card">
+        <div class="fit-card-header">
+          <h2 class="fit-card-title">Meus treinos</h2>
+          <div
+            style="display:flex; gap:6px; background:var(--bg-input); padding:3px; border-radius:9px; border:1px solid var(--borda-forte);">
+            <button type="button" id="tabSemanaAtual" class="fit-btn-primary"
+              style="padding:5px 11px; font-size:0.78rem; min-height:auto; white-space:nowrap;">Semana atual</button>
+            <button type="button" id="tabTodosTreinos" class="fit-btn-dark"
+              style="padding:5px 11px; font-size:0.78rem; min-height:auto; white-space:nowrap; border:none; background:transparent;">Todos
+              os treinos</button>
+          </div>
+        </div>
+
+        <div class="fit-subcard" style="margin-bottom:14px; padding:9px 14px;">
+          <span style="cursor:pointer;">‹</span>
+          <span id="labelPeriodoSemana" style="font-size:0.86rem; font-weight:600;">Plano ativo</span>
+          <span style="cursor:pointer;">›</span>
+        </div>
+
+        <div id="listaTreinosContainer" class="fit-col-stack" style="gap:10px;">
+          <div class="fit-empty-state">
+            Carregando seus treinos...
+          </div>
+        </div>
+      </div>
+
+      <div class="fit-card-highlight" style="display:flex; align-items:center; gap:14px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <path d="M9 18h6" />
+          <path d="M10 22h4" />
+          <path
+            d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+        </svg>
+        <div>
+          <strong style="display:block; font-size:0.95rem; margin-bottom:3px;">Dica da Kiara</strong>
+          <span id="textoDicaKiara" style="font-size:0.83rem; color:var(--text-secondary); line-height:1.45;">Gere seu
+            plano personalizado com a Kiara ou crie um treino manual para começar a acompanhar sua evolução.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUNA DIREITA: DETALHES DO TREINO -->
+    <section class="fit-card" style="align-self: start; overflow: hidden;">
+      <div class="fit-card-header" style="align-items:flex-start;">
+        <div style="min-width:0; flex:1;">
+          <h2 id="detalheTitulo" class="fit-card-title" style="font-size:1.15rem; line-height:1.25;">Nenhum treino
+            selecionado</h2>
+          <div id="detalheSub" style="font-size:0.78rem; color:var(--text-secondary); margin-top:4px;">Gere ou crie um
+            treino para visualizar os exercícios</div>
+        </div>
+        <span id="detalheBadgeOrigem" class="fit-badge-kiara"
+          style="display:none; white-space:nowrap; flex-shrink:0;">Gerado pela Kiara</span>
+      </div>
+
+      <!-- ABAS DE DETALHE -->
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-top:12px;">
+        <button type="button" id="abaExercicios" class="fit-btn-primary"
+          style="padding:7px 8px; font-size:0.78rem; min-height:auto; white-space:nowrap;">Exercícios</button>
+        <button type="button" id="abaVisao" class="fit-btn-dark"
+          style="padding:7px 8px; font-size:0.78rem; min-height:auto; white-space:nowrap;">Visão geral</button>
+        <button type="button" id="abaObservacoes" class="fit-btn-dark"
+          style="padding:7px 8px; font-size:0.78rem; min-height:auto; white-space:nowrap;">Observações</button>
+      </div>
+
+      <table class="fit-table-exercicios">
+        <thead>
+          <tr>
+            <th>Exercício</th>
+            <th>Séries</th>
+            <th>Repetições</th>
+            <th>Descanso</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaExercicios">
+          <tr>
+            <td colspan="4" style="text-align:center; color:var(--text-secondary); padding:26px 10px;">
+              Nenhum exercício cadastrado ainda.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div id="painelDetalheExtra"
+        style="display:none; padding:14px; border-radius:10px; background:var(--bg-input); border:1px solid var(--borda); font-size:0.85rem; line-height:1.5; margin-top:12px;">
+      </div>
+
+      <!-- BOTÕES DE AÇÃO INFERIORES -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:18px;">
+        <button type="button" id="btnVerTreino" class="fit-btn-primary"
+          style="grid-column: 1 / -1; padding:10px 12px; font-size:0.84rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>Marcar treino como finalizado</span>
+        </button>
+        <button type="button" id="btnCriarManualDir" class="fit-btn-dark"
+          style="padding:10px 8px; font-size:0.8rem; white-space:nowrap;">+
+          Criar treino</button>
+        <button type="button" id="btnGerarKiaraDir" class="fit-btn-dark"
+          style="padding:10px 8px; font-size:0.8rem; white-space:nowrap;">Gerar com Kiara</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE CONFIRMAÇÃO DE TREINO FINALIZADO -->
+  <div id="modalFinalizarTreino" class="fit-modal-backdrop" role="dialog" aria-modal="true"
+    aria-labelledby="modalFinalizarTitulo">
+    <div class="fit-modal-card">
+      <div class="fit-modal-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <h3 id="modalFinalizarTitulo" style="margin:0 0 8px; font-size:1.12rem; color:var(--text-primary);">
+        Finalizar treino?
+      </h3>
+      <p id="modalFinalizarTexto"
+        style="margin:0 0 20px; font-size:0.88rem; color:var(--text-secondary); line-height:1.5;">
+        Ao confirmar, este treino será marcado como concluído e removido da sua lista ativa.
+      </p>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" id="btnCancelarFinalizar" class="fit-btn-dark"
+          style="padding:9px 16px; font-size:0.84rem;">
+          Cancelar
+        </button>
+        <button type="button" id="btnConfirmarFinalizar" class="fit-btn-primary"
+          style="padding:9px 18px; font-size:0.84rem;">
+          Confirmar conclusão
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ICONE_EXERCICIO_SVG = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a3 3 0 0 0-3 3v1h6V5a3 3 0 0 0-3-3z"/>
+        <path d="M6 8a6 6 0 0 1 12 0l1.5 7.5A4.5 4.5 0 0 1 15.1 21H8.9a4.5 4.5 0 0 1-4.4-5.5L6 8z"/>
+      </svg>`;
+
+    let treinosAtuais = [];
+    let treinoSelecionado = null;
+    let abaDetalheAtual = 'exercicios';
+    let filtroListaAtual = 'semana'; // 'semana' ou 'todos'
+
+    function atualizarAbasFiltroLista() {
+      const btnSemana = document.getElementById('tabSemanaAtual');
+      const btnTodos = document.getElementById('tabTodosTreinos');
+      const labelPeriodo = document.getElementById('labelPeriodoSemana');
+
+      if (filtroListaAtual === 'semana') {
+        btnSemana.className = 'fit-btn-primary';
+        btnSemana.style.background = '';
+        btnSemana.style.border = '';
+        btnTodos.className = 'fit-btn-dark';
+        btnTodos.style.background = 'transparent';
+        btnTodos.style.border = 'none';
+        if (labelPeriodo) labelPeriodo.textContent = 'Plano ativo (Semana atual)';
+      } else {
+        btnTodos.className = 'fit-btn-primary';
+        btnTodos.style.background = '';
+        btnTodos.style.border = '';
+        btnSemana.className = 'fit-btn-dark';
+        btnSemana.style.background = 'transparent';
+        btnSemana.style.border = 'none';
+        if (labelPeriodo) labelPeriodo.textContent = `Todos os treinos salvos (${treinosAtuais.length})`;
+      }
+      renderizarListaTreinos();
+    }
+
+    function renderizarListaTreinos() {
+      const listaContainer = document.getElementById('listaTreinosContainer');
+      const listaExibida = filtroListaAtual === 'semana' ? treinosAtuais.slice(0, 7) : treinosAtuais;
+
+      if (listaExibida.length === 0) {
+        listaContainer.innerHTML = `
+          <div class="fit-empty-state">
+            <strong style="display:block; color:var(--text-primary); margin-bottom:6px;">Nenhum treino cadastrado ainda</strong>
+            <span style="font-size:0.84rem;">Peça para a Kiara montar seu plano no chat ou crie um treino manual.</span>
+          </div>`;
+        return;
+      }
+
+      listaContainer.innerHTML = listaExibida.map((t, idx) => `
+        <div class="fit-subcard ${treinoSelecionado && treinoSelecionado.id === t.id ? 'selecionado' : ''}" style="cursor:pointer;" onclick="selecionarTreino(${idx}, this)">
+          <div>
+            <div style="font-weight:700; font-size:0.95rem;">${t.titulo}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${t.subtitulo}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="${t.origem === 'Manual' ? 'fit-badge-manual' : 'fit-badge-kiara'}">${t.origem}</span>
+            <span>›</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function atualizarAbasVisuais() {
+      const abas = {
+        exercicios: document.getElementById('abaExercicios'),
+        visao: document.getElementById('abaVisao'),
+        observacoes: document.getElementById('abaObservacoes')
+      };
+      Object.entries(abas).forEach(([chave, btn]) => {
+        if (!btn) return;
+        btn.className = chave === abaDetalheAtual ? 'fit-btn-primary' : 'fit-btn-dark';
+      });
+    }
+
+    function renderizarDetalheTreino() {
+      atualizarAbasVisuais();
+
+      const tituloEl = document.getElementById('detalheTitulo');
+      const subEl = document.getElementById('detalheSub');
+      const badgeOrigem = document.getElementById('detalheBadgeOrigem');
+      const tabela = document.querySelector('.fit-table-exercicios');
+      const tbody = document.getElementById('tabelaExercicios');
+      const painelExtra = document.getElementById('painelDetalheExtra');
+
+      if (!treinoSelecionado) {
+        tituloEl.textContent = 'Nenhum treino ativo';
+        subEl.textContent = 'Salve um treino do chat com a Kiara ou crie manualmente';
+        if (badgeOrigem) badgeOrigem.style.display = 'none';
+        if (tabela) tabela.style.display = 'table';
+        if (painelExtra) painelExtra.style.display = 'none';
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align:center; color:var(--text-secondary); padding:28px 10px;">
+              Você ainda não possui treinos salvos.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tituloEl.textContent = treinoSelecionado.titulo;
+      subEl.textContent = treinoSelecionado.subtitulo || '';
+      if (badgeOrigem) {
+        badgeOrigem.style.display = 'inline-block';
+        badgeOrigem.textContent = treinoSelecionado.origem || 'Gerado pela Kiara';
+        badgeOrigem.className = treinoSelecionado.origem === 'Manual' ? 'fit-badge-manual' : 'fit-badge-kiara';
+      }
+
+      if (abaDetalheAtual === 'exercicios') {
+        if (tabela) tabela.style.display = 'table';
+        if (painelExtra) painelExtra.style.display = 'none';
+        if (!treinoSelecionado.exercicios || treinoSelecionado.exercicios.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-secondary); padding:20px;">Este treino não possui exercícios listados.</td></tr>`;
+          return;
+        }
+        tbody.innerHTML = treinoSelecionado.exercicios
+          .map(r => `
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:8px;"><span class="ex-thumb">${ICONE_EXERCICIO_SVG}</span> <span style="line-height:1.3;">${r[0]}</span></div></td>
+              <td>${r[1]}</td>
+              <td>${r[2]}</td>
+              <td>${r[3]}</td>
+            </tr>`)
+          .join('');
+      } else if (abaDetalheAtual === 'visao') {
+        if (tabela) tabela.style.display = 'none';
+        if (painelExtra) {
+          painelExtra.style.display = 'block';
+          const totalSeries = (treinoSelecionado.exercicios || []).reduce((acc, r) => acc + (parseInt(r[1], 10) || 3), 0);
+          painelExtra.innerHTML = `
+            <strong>Resumo da sessão</strong><br><br>
+            • <b>Total de exercícios:</b> ${(treinoSelecionado.exercicios || []).length}<br>
+            • <b>Volume total estimado:</b> ${totalSeries} séries<br>
+            • <b>Duração média:</b> ${Math.max(35, totalSeries * 3)} minutos<br>
+            • <b>Origem:</b> ${treinoSelecionado.origem || 'Personalizado'}
+          `;
+        }
+      } else {
+        if (tabela) tabela.style.display = 'none';
+        if (painelExtra) {
+          painelExtra.style.display = 'block';
+          painelExtra.innerHTML = `
+            <strong>Observações e ficha completa</strong><br><br>
+            <div style="white-space:pre-line; color:var(--text-secondary);">${treinoSelecionado.observacoes || 'Execute cada movimento com postura alinhada e amplitude completa.'}</div>
+          `;
+        }
+      }
+    }
+
+    function selecionarTreino(idx, cardEl) {
+      document.querySelectorAll('#listaTreinosContainer .fit-subcard.selecionado').forEach(el => el.classList.remove('selecionado'));
+      if (cardEl) cardEl.classList.add('selecionado');
+      treinoSelecionado = treinosAtuais[idx] || null;
+      renderizarDetalheTreino();
+    }
+
+    async function carregarTreinosReais() {
+      const listaContainer = document.getElementById('listaTreinosContainer');
+      try {
+        const res = await FitApp.api('/api/treinos');
+        const listaBruta = res.ok && Array.isArray(res.treinos) ? res.treinos : [];
+
+        treinosAtuais = listaBruta.map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          subtitulo: `${t.dia_semana || 'Semana'}${t.subtitulo ? ' • ' + t.subtitulo : ''}`,
+          origem: t.origem === 'kiara' ? 'Gerado pela Kiara' : 'Manual',
+          observacoes: t.observacoes || '',
+          exercicios: (t.exercicios || []).map((ex) => {
+            let series = String(ex.series || 3);
+            let reps = String(ex.repeticoes || '8 – 12').trim();
+            let descanso = `${ex.descanso_segundos || 60} s`;
+
+            // Limpa registros antigos salvos no formato "4x 10 (descanso 75s)"
+            const matchDesc = reps.match(/descanso\s*(\d+)/i);
+            if (matchDesc) {
+              descanso = `${matchDesc[1]} s`;
+            }
+            const matchSr = reps.match(/^(\d+)\s*x\s*([\d\s\-–]+)/i);
+            if (matchSr) {
+              series = matchSr[1];
+              reps = matchSr[2].trim();
+            } else if (reps.length > 14) {
+              reps = reps.replace(/\(.*?\)/g, '').split(',')[0].trim();
+              if (reps.length > 14) reps = '10 – 12';
+            }
+
+            return [ex.nome_exercicio || 'Exercício', series, reps, descanso];
+          })
+        }));
+
+        const totalEx = treinosAtuais.reduce((acc, t) => acc + t.exercicios.length, 0);
+        document.getElementById('statQtdTreinos').textContent = treinosAtuais.length;
+        document.getElementById('statTotalEx').textContent = totalEx;
+        document.getElementById('statUltimaAtt').textContent = treinosAtuais.length > 0 ? 'Atualizado agora' : 'Nenhum treino';
+
+        if (treinosAtuais.length === 0) {
+          treinoSelecionado = null;
+          renderizarListaTreinos();
+          document.getElementById('textoDicaKiara').textContent =
+            'Você ainda não tem treinos salvos. Vá no chat com a Kiara e clique em "Salvar este treino"!';
+          renderizarDetalheTreino();
+          return;
+        }
+
+        document.getElementById('textoDicaKiara').textContent =
+          `Você possui ${treinosAtuais.length} treino(s) ativo(s) totalizando ${totalEx} exercícios. Ao concluir um treino, clique em "Marcar treino como finalizado".`;
+
+        treinoSelecionado = treinosAtuais[0];
+        renderizarListaTreinos();
+        renderizarDetalheTreino();
+      } catch (_) {
+        listaContainer.innerHTML = `
+          <div class="fit-empty-state">
+            Não foi possível carregar seus treinos agora.
+          </div>`;
+      }
+    }
+
+    async function gerarComKiara() {
+      FitApp.ui.toast('Kiara está montando seu plano de treinos...', 'info');
+      try {
+        const res = await FitApp.api('/api/treinos/gerar-kiara', { method: 'POST' });
+        FitApp.ui.toast(res.mensagem || 'Treinos gerados pela Kiara!', 'sucesso');
+        await carregarTreinosReais();
+      } catch (err) {
+        FitApp.ui.toast(err.message || 'Erro ao gerar treinos com a Kiara.', 'erro');
+      }
+    }
+
+    async function abrirCriacaoManual() {
+      const titulo = prompt('Nome do treino (ex.: Treino A — Peito e Tríceps):');
+      if (!titulo) return;
+      const dia_semana = prompt('Dia da semana (ex.: Segunda-feira):', 'Segunda-feira') || 'Segunda-feira';
+      const exTexto = prompt('Digite os exercícios separados por vírgula:', 'Supino reto, Crucifixo, Tríceps corda');
+      if (!exTexto) return;
+
+      const exercicios = exTexto.split(',').map((nome) => ({
+        nome_exercicio: nome.trim(),
+        series: 3,
+        repeticoes: '10 - 12',
+        descanso_segundos: 60
+      })).filter((e) => e.nome_exercicio);
+
+      try {
+        await FitApp.api('/api/treinos', {
+          method: 'POST',
+          body: { titulo, dia_semana, subtitulo: 'Personalizado', origem: 'manual', exercicios }
+        });
+        FitApp.ui.toast('Treino manual criado e salvo!', 'sucesso');
+        await carregarTreinosReais();
+      } catch (err) {
+        FitApp.ui.toast(err.message || 'Erro ao criar treino.', 'erro');
+      }
+    }
+
+    async function abrirBiblioteca() {
+      const busca = prompt('Buscar exercício na biblioteca (deixe vazio para listar os primeiros):', '') || '';
+      try {
+        const res = await FitApp.api(`/api/exercicios?busca=${encodeURIComponent(busca)}`);
+        const lista = (res.exercicios || []).slice(0, 10);
+        if (lista.length === 0) {
+          FitApp.ui.toast('Nenhum exercício encontrado com esse termo.', 'info');
+          return;
+        }
+        alert('Exercícios encontrados:\n\n' + lista.map((e, i) => `${i + 1}. ${e.nome} (${e.equipamento || 'livre'})`).join('\n'));
+      } catch (err) {
+        FitApp.ui.toast(err.message || 'Erro ao carregar biblioteca.', 'erro');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarTreinosReais();
+
+      document.getElementById('tabSemanaAtual').onclick = () => {
+        filtroListaAtual = 'semana';
+        atualizarAbasFiltroLista();
+      };
+      document.getElementById('tabTodosTreinos').onclick = () => {
+        filtroListaAtual = 'todos';
+        atualizarAbasFiltroLista();
+      };
+
+      document.getElementById('btnGerarKiaraEsq').onclick = gerarComKiara;
+      document.getElementById('btnGerarKiaraDir').onclick = gerarComKiara;
+      document.getElementById('btnCriarManualEsq').onclick = abrirCriacaoManual;
+      document.getElementById('btnCriarManualDir').onclick = abrirCriacaoManual;
+      document.getElementById('btnBibliotecaEsq').onclick = abrirBiblioteca;
+
+      document.getElementById('abaExercicios').onclick = () => { abaDetalheAtual = 'exercicios'; renderizarDetalheTreino(); };
+      document.getElementById('abaVisao').onclick = () => { abaDetalheAtual = 'visao'; renderizarDetalheTreino(); };
+      document.getElementById('abaObservacoes').onclick = () => { abaDetalheAtual = 'observacoes'; renderizarDetalheTreino(); };
+
+      document.getElementById('btnVerTreino').onclick = async () => {
+        const modalFinalizar = document.getElementById('modalFinalizarTreino');
+        const modalTexto = document.getElementById('modalFinalizarTexto');
+        const btnCancelarFinalizar = document.getElementById('btnCancelarFinalizar');
+        const btnConfirmarFinalizar = document.getElementById('btnConfirmarFinalizar');
+
+        function fecharModalFinalizar() {
+          modalFinalizar.classList.remove('aberto');
+        }
+
+        btnCancelarFinalizar.onclick = fecharModalFinalizar;
+        modalFinalizar.onclick = (e) => {
+          if (e.target === modalFinalizar) fecharModalFinalizar();
+        };
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && modalFinalizar.classList.contains('aberto')) {
+            fecharModalFinalizar();
+          }
+        });
+
+        document.getElementById('btnVerTreino').onclick = () => {
+          if (!treinoSelecionado) {
+            FitApp.ui.toast('Selecione um treino primeiro.', 'info');
+            return;
+          }
+          modalTexto.innerHTML = `Você já concluiu o treino <strong style="color:var(--text-primary);">"${treinoSelecionado.titulo}"</strong>?<br><br>Ao confirmar, ele será marcado como finalizado e removido da sua lista ativa.`;
+          modalFinalizar.classList.add('aberto');
+        };
+
+        btnConfirmarFinalizar.onclick = async () => {
+          if (!treinoSelecionado) return;
+          btnConfirmarFinalizar.disabled = true;
+          btnConfirmarFinalizar.textContent = 'Finalizando...';
+
+          try {
+            await FitApp.api(`/api/treinos/${treinoSelecionado.id}`, { method: 'DELETE' });
+            fecharModalFinalizar();
+            FitApp.ui.toast('Treino finalizado e removido da lista!', 'sucesso');
+            await carregarTreinosReais();
+          } catch (err) {
+            FitApp.ui.toast(err.message || 'Erro ao finalizar treino.', 'erro');
+          } finally {
+            btnConfirmarFinalizar.disabled = false;
+            btnConfirmarFinalizar.textContent = 'Confirmar conclusão';
+          }
+        };
+      };
+    });
+  </script>
+</body>
+
+</html>

@@ -1,157 +1,453 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Minha conta — FitFATEC</title>
-<link rel="stylesheet" href="/CSS.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar ou Criar Conta — FitFATEC</title>
+  <link rel="stylesheet" href="../CSS.css">
+  <script src="../visual.js" defer></script>
+  <style>
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background-color: var(--bg-input);
+      border: 1px solid var(--borda-forte);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .auth-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .auth-tab.ativo {
+      background: linear-gradient(135deg, #FF7E29 0%, #F2580C 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35);
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 18px 0;
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background-color: var(--borda-forte);
+    }
+
+    .kiara-feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 18px 0 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .kiara-feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .fit-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+
+    .fit-modal-overlay.aberto {
+      display: flex;
+    }
+
+    .fit-modal-box {
+      width: 100%;
+      max-width: 420px;
+      padding: 26px;
+      animation: fadeInModal 0.18s ease-out;
+    }
+
+    @keyframes fadeInModal {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <div>🏋️ Minha conta · FitFATEC</div>
-  <button class="btn-secundario" onclick="voltar()">Voltar ao início</button>
-</header>
 
-<main class="auth">
-  <h2>Cadastro</h2>
-  <div class="card">
-    <label>Nome</label>
-    <input id="cadNome" type="text" placeholder="João Silva">
-    <label>E-mail</label>
-    <input id="cadEmail" type="email" placeholder="joao@email.com">
-    <label>Senha (mín. 8 caracteres)</label>
-    <input id="cadSenha" type="password" placeholder="••••••••">
-    <button id="btnCadastro" onclick="cadastrar()">Cadastrar</button>
-    <div id="msgCadastro" class="feedback"></div>
-  </div>
+  <header class="fit-navbar">
+    <div class="fit-nav-left">
+      <a href="/pages/conta.html" class="fit-brand">
+        <img src="../img/kiara-logo.png" alt="Kiara">
+        <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
+      </a>
+    </div>
+  </header>
 
-  <h2>Login</h2>
-  <div class="card">
-    <label>E-mail</label>
-    <input id="logEmail" type="email" placeholder="joao@email.com">
-    <label>Senha</label>
-    <input id="logSenha" type="password" placeholder="••••••••">
-    <button id="btnLogin" onclick="login()">Entrar</button>
-    <div id="msgLogin" class="feedback"></div>
-  </div>
+  <main class="fit-container fit-grid-auth">
+    <!-- COLUNA ESQUERDA: MASCOTE KIARA -->
+    <section>
+      <div class="kiara-welcome-container">
+        <div class="kiara-avatar-wrapper">
+          <img src="../img/kiara-logo.png" alt="Kiara Assistente Virtual FitFATEC" class="kiara-img" />
+        </div>
 
-  <h2>Usuário Conectado</h2>
-  <div class="card">
-    <button id="btnConsultar" onclick="consultarUsuario()">Consultar usuário</button>
-    <button class="btn-secundario" id="btnLogout" onclick="logout()">Sair</button>
-    <div id="msgUsuario" class="feedback"></div>
-  </div>
+        <div class="fit-card" style="padding:22px;">
+          <h2 style="margin:0 0 10px 0; font-size:1.35rem;">Oi! Eu sou a Kiara!</h2>
+          <p style="margin:0; font-size:0.9rem; line-height:1.55; color:var(--text-secondary);">
+            E aí, pronto pra treinar? 
+            Eu sou a Kiara, sua assistente no FitFATEC. Faça login e bora evoluir seus resultados.
+          </p>
+        </div>
 
-  <div class="aviso">
-    Tela de acesso provisória. Cadastro e login já funcionam; o redesign visual ainda está planejado.
-  </div>
-</main>
+        <ul class="kiara-feature-list">
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
+              <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
+            </svg>
+            Treinos personalizados
+          </li>
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Agendamento de aulas
+          </li>
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
+              <rect x="4" y="14" width="3" height="6" rx="1" />
+              <rect x="10.5" y="10" width="3" height="10" rx="1" />
+              <rect x="17" y="5" width="3" height="15" rx="1" />
+            </svg>
+            Acompanhamento da sua evolução
+          </li>
+        </ul>
+    </section>
 
-<script>
-const API = ""; // mesma origem
+    <!-- COLUNA DIREITA: CARD DE ACESSO -->
+    <section class="fit-card" style="padding:28px;">
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+        <div>
+          <h1 style="margin:0; font-size:1.45rem; font-weight:800;">Acesse sua conta FitFATEC</h1>
+          <p style="margin:4px 0 0 0; font-size:0.86rem; color:var(--text-secondary);">Entre na sua conta ou crie um
+            novo cadastro para começar.</p>
+        </div>
+      </div>
 
-function mostrar(id, texto, tipo) {
-  const el = document.getElementById(id);
-  el.textContent = texto;
-  el.className = "feedback " + tipo;
-  el.style.display = "block";
-}
+      <div class="auth-tabs">
+        <button type="button" id="tabEntrar" class="auth-tab ativo" onclick="alternarAba('entrar')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          Entrar
+        </button>
+        <button type="button" id="tabCadastro" class="auth-tab" onclick="alternarAba('cadastro')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <line x1="20" y1="8" x2="20" y2="14" />
+            <line x1="23" y1="11" x2="17" y2="11" />
+          </svg>
+          Criar conta
+        </button>
+      </div>
 
-function esconder(id) {
-  const el = document.getElementById(id);
-  el.style.display = "none";
-}
+      <!-- FORMULÁRIO ENTRAR -->
+      <form id="formLogin" onsubmit="fazerLogin(event)">
+        <div style="margin-bottom:14px;">
+          <label class="fit-label" for="loginIdentificador">Matrícula ou e-mail</label>
+          <div class="fit-input-with-icon">
+            <span class="left-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </span>
+            <input type="text" id="loginIdentificador" placeholder="Ex.: 20260001 ou joao.silva@fatec.sp.gov.br"
+              required>
+          </div>
+        </div>
 
-async function cadastrar() {
-  const btn = document.getElementById("btnCadastro");
-  btn.disabled = true;
-  mostrar("msgCadastro", "Processando...", "processando");
-  try {
-    const nome = document.getElementById("cadNome").value;
-    const email = document.getElementById("cadEmail").value;
-    const senha = document.getElementById("cadSenha").value;
-    const r = await fetch("/cadastro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, email, senha }),
+        <div style="margin-bottom:14px;">
+          <label class="fit-label" for="loginSenha">Senha</label>
+          <div class="fit-input-with-icon">
+            <span class="left-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </span>
+            <input type="password" id="loginSenha" placeholder="Digite sua senha" required style="padding-right:38px;">
+            <button type="button" class="right-btn" onclick="toggleSenha('loginSenha')">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:0.85rem;">
+          <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; color:var(--text-primary);">
+            <input type="checkbox" id="lembrarMim" style="width:16px; height:16px; accent-color:var(--accent-primary);">
+            Lembrar de mim
+          </label>
+          <a href="#"
+            onclick="FitApp.ui.toast('Procure a recepção da FitFATEC ou use sua matrícula cadastrada.', 'info'); return false;"
+            style="color:var(--accent-primary); text-decoration:none; font-weight:600;">Esqueci minha senha</a>
+        </div>
+
+        <button type="submit" class="fit-btn-primary" style="width:100%; padding:13px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          Entrar na FitFATEC
+        </button>
+
+        <div class="auth-divider">Ainda não tem uma conta?</div>
+
+        <button type="button" class="fit-btn-outline-orange" style="width:100%; padding:12px;"
+          onclick="alternarAba('cadastro')">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <line x1="20" y1="8" x2="20" y2="14" />
+            <line x1="23" y1="11" x2="17" y2="11" />
+          </svg>
+          Criar conta gratuita
+        </button>
+      </form>
+
+      <!-- FORMULÁRIO CRIAR CONTA -->
+      <form id="formCadastro" style="display:none;" onsubmit="fazerCadastro(event)">
+        <div style="margin-bottom:12px;">
+          <label class="fit-label" for="cadNome">Nome completo</label>
+          <input type="text" id="cadNome" placeholder="João Silva" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="fit-label" for="cadMatricula">Matrícula</label>
+          <input type="text" id="cadMatricula" placeholder="Ex.: 20260001" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="fit-label" for="cadEmail">E-mail</label>
+          <input type="email" id="cadEmail" placeholder="joao.silva@fatec.sp.gov.br" required>
+        </div>
+        <div style="margin-bottom:18px;">
+          <label class="fit-label" for="cadSenha">Senha</label>
+          <div class="fit-input-with-icon">
+            <input type="password" id="cadSenha" placeholder="Crie uma senha" required
+              style="padding-left:12px; padding-right:38px;">
+            <button type="button" class="right-btn" onclick="toggleSenha('cadSenha')">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="fit-btn-primary" style="width:100%; padding:13px;">Criar conta</button>
+      </form>
+    </section>
+    <!-- MODAL RECUPERAR SENHA -->
+    <div id="modalRecuperarSenha" class="fit-modal-overlay" onclick="if(event.target===this) fecharModalSenha()">
+      <div class="fit-card fit-modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Redefinir senha</h3>
+          </div>
+          <button type="button" onclick="fecharModalSenha()"
+            style="background:none; border:none; color:var(--text-secondary); font-size:1.3rem; cursor:pointer;">×</button>
+        </div>
+
+        <!-- ETAPA 1: IDENTIFICADOR -->
+        <form id="formEtapaIdentificador" onsubmit="solicitarTokenSenha(event)">
+          <p style="margin:0 0 14px; font-size:0.86rem; color:var(--text-secondary); line-height:1.45;">
+            Informe sua matrícula ou e-mail cadastrado para liberar a redefinição de senha.
+          </p>
+          <div style="margin-bottom:16px;">
+            <label class="fit-label" for="recIdentificador">Matrícula ou e-mail</label>
+            <input type="text" id="recIdentificador" placeholder="Ex.: 20260001 ou joao.silva@fatec.sp.gov.br" required>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:10px;">
+            <button type="button" class="fit-btn-dark" onclick="fecharModalSenha()">Cancelar</button>
+            <button type="submit" class="fit-btn-primary">Continuar</button>
+          </div>
+        </form>
+
+        <!-- ETAPA 2: NOVA SENHA -->
+        <form id="formEtapaNovaSenha" style="display:none;" onsubmit="confirmarNovaSenha(event)">
+          <p style="margin:0 0 14px; font-size:0.86rem; color:var(--text-secondary); line-height:1.45;">
+            Conta localizada! Crie sua nova senha com no mínimo 8 caracteres.
+          </p>
+          <input type="hidden" id="recToken">
+          <div style="margin-bottom:16px;">
+            <label class="fit-label" for="recNovaSenha">Nova senha</label>
+            <div class="fit-input-with-icon">
+              <input type="password" id="recNovaSenha" minlength="8" placeholder="Mínimo 8 caracteres" required
+                style="padding-left:12px; padding-right:38px;">
+              <button type="button" class="right-btn" onclick="toggleSenha('recNovaSenha')">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:10px;">
+            <button type="button" class="fit-btn-dark" onclick="fecharModalSenha()">Cancelar</button>
+            <button type="submit" class="fit-btn-primary">Salvar nova senha</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function alternarAba(aba) {
+      const isEntrar = aba === 'entrar';
+      document.getElementById('tabEntrar').classList.toggle('ativo', isEntrar);
+      document.getElementById('tabCadastro').classList.toggle('ativo', !isEntrar);
+      document.getElementById('formLogin').style.display = isEntrar ? 'block' : 'none';
+      document.getElementById('formCadastro').style.display = isEntrar ? 'none' : 'block';
+    }
+
+    function toggleSenha(id) {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    async function fazerLogin(e) {
+      e.preventDefault();
+      const identificador = document.getElementById('loginIdentificador').value.trim();
+      const senha = document.getElementById('loginSenha').value;
+      await FitApp.auth.fazerLogin(identificador, senha);
+    }
+
+    async function fazerCadastro(e) {
+      e.preventDefault();
+      const nome = document.getElementById('cadNome').value.trim();
+      const matricula = document.getElementById('cadMatricula').value.trim();
+      const email = document.getElementById('cadEmail').value.trim();
+      const senha = document.getElementById('cadSenha').value;
+      await FitApp.auth.fazerCadastro(nome, matricula, email, senha);
+    }
+
+    function abrirModalSenha() {
+      const loginAtual = document.getElementById('loginIdentificador').value.trim();
+      document.getElementById('recIdentificador').value = loginAtual;
+      document.getElementById('recNovaSenha').value = '';
+      document.getElementById('formEtapaIdentificador').style.display = 'block';
+      document.getElementById('formEtapaNovaSenha').style.display = 'none';
+      document.getElementById('modalRecuperarSenha').classList.add('aberto');
+      setTimeout(() => document.getElementById('recIdentificador').focus(), 50);
+    }
+
+    function fecharModalSenha() {
+      document.getElementById('modalRecuperarSenha').classList.remove('aberto');
+    }
+
+    async function solicitarTokenSenha(e) {
+      e.preventDefault();
+      const identificador = document.getElementById('recIdentificador').value.trim();
+      if (!identificador) return;
+
+      try {
+        const res = await FitApp.api('/api/auth/esqueci-senha', {
+          method: 'POST',
+          body: { identificador }
+        });
+        document.getElementById('recToken').value = res.token_demonstracao;
+        document.getElementById('formEtapaIdentificador').style.display = 'none';
+        document.getElementById('formEtapaNovaSenha').style.display = 'block';
+        setTimeout(() => document.getElementById('recNovaSenha').focus(), 50);
+      } catch (err) {
+        FitApp.ui.toast(err.message || 'Aluno não encontrado.', 'erro');
+      }
+    }
+
+    async function confirmarNovaSenha(e) {
+      e.preventDefault();
+      const token = document.getElementById('recToken').value;
+      const nova_senha = document.getElementById('recNovaSenha').value;
+
+      try {
+        await FitApp.api('/api/auth/redefinir-senha', {
+          method: 'POST',
+          body: { token, nova_senha }
+        });
+        fecharModalSenha();
+        FitApp.ui.toast('Senha redefinida com sucesso! Já pode entrar.', 'sucesso');
+      } catch (err) {
+        FitApp.ui.toast(err.message || 'Erro ao redefinir a senha.', 'erro');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const linkEsqueci = document.querySelector('#formLogin a[href="#"]');
+      if (linkEsqueci) {
+        linkEsqueci.onclick = (e) => {
+          e.preventDefault();
+          abrirModalSenha();
+        };
+      }
     });
-    const d = await r.json();
-    if (r.ok) {
-      mostrar("msgCadastro", d.mensagem, "sucesso");
-    } else {
-      mostrar("msgCadastro", d.erro || "Erro no cadastro", "erro");
-    }
-  } catch (e) {
-    mostrar("msgCadastro", "Erro de rede: " + e.message, "erro");
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function login() {
-  const btn = document.getElementById("btnLogin");
-  btn.disabled = true;
-  mostrar("msgLogin", "Processando...", "processando");
-  try {
-    const email = document.getElementById("logEmail").value;
-    const senha = document.getElementById("logSenha").value;
-    const r = await fetch("/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, senha }),
-    });
-    const d = await r.json();
-    if (r.ok) {
-      mostrar("msgLogin", "Login realizado: " + d.usuario.nome, "sucesso");
-      // A sessão já foi criada no servidor; o painel carregará a matrícula automaticamente.
-      window.location.href = "/";
-    } else {
-      mostrar("msgLogin", d.erro || "Erro no login", "erro");
-    }
-  } catch (e) {
-    mostrar("msgLogin", "Erro de rede: " + e.message, "erro");
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function consultarUsuario() {
-  const btn = document.getElementById("btnConsultar");
-  btn.disabled = true;
-  mostrar("msgUsuario", "Processando...", "processando");
-  try {
-    const r = await fetch("/api/me");
-    const d = await r.json();
-    if (r.ok) {
-      mostrar("msgUsuario", "Conectado: " + d.usuario.nome + " (" + d.usuario.email + ") - papel: " + d.usuario.papel, "sucesso");
-    } else {
-      mostrar("msgUsuario", d.erro || "Não autenticado", "erro");
-    }
-  } catch (e) {
-    mostrar("msgUsuario", "Erro de rede: " + e.message, "erro");
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function logout() {
-  const btn = document.getElementById("btnLogout");
-  btn.disabled = true;
-  mostrar("msgUsuario", "Processando...", "processando");
-  try {
-    await fetch("/logout", { method: "POST" });
-    mostrar("msgUsuario", "Logout realizado", "sucesso");
-  } catch (e) {
-    mostrar("msgUsuario", "Erro de rede: " + e.message, "erro");
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function voltar() {
-  window.location.href = "/";
-}
-</script>
-
+  </script>
 </body>
+
 </html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agendamentos — FitFATEC</title>
+  <link rel="stylesheet" href="../CSS.css">
+  <script src="../visual.js" defer></script>
+  <style>
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .cal-head {
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      padding: 4px 0;
+    }
+
+    .cal-day {
+      padding: 7px 0;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .cal-day.muted {
+      color: var(--text-muted);
+    }
+
+    .cal-day.ativo {
+      background: linear-gradient(135deg, #FF7E29 0%, #F2580C 100%);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    .cal-day.com-aula::after {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: var(--accent-primary);
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="fit-navbar">
+    <div class="fit-nav-left">
+      <a href="/index.html" class="fit-brand">
+        <img src="../img/kiara-logo.png" alt="Kiara">
+        <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
+      </a>
+      <div class="fit-divider-v"></div>
+      <nav class="fit-nav-links">
+        <a href="/index.html" class="fit-nav-link">Início</a>
+        <a href="/pages/perfil.html" class="fit-nav-link">Meu perfil</a>
+        <a href="/pages/treinos.html" class="fit-nav-link">Meus treinos</a>
+        <a href="/pages/agendamentos.html" class="fit-nav-link ativo">Agendamentos</a>
+      </nav>
+    </div>
+    <div class="fit-nav-right">
+      <div class="fit-divider-v"></div>
+      <a id="navAuthBtn" href="/pages/conta.html" class="fit-btn-auth"><span>Entrar</span></a>
+    </div>
+  </header>
+
+  <main class="fit-container fit-grid-3col">
+    <!-- COLUNA ESQUERDA -->
+    <section class="fit-col-stack">
+      <div class="fit-card" id="cardDadosAluno">
+        <h2 class="fit-card-title" style="margin-bottom:14px;">Dados do aluno</h2>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <img id="alunoAvatarCard" src="../img/kiara-logo.png" alt="Avatar" width="52" height="52"
+            style="border-radius:50%; object-fit:cover; border:2px solid var(--accent-primary);">
+          <div>
+            <strong id="alunoNomeCard" style="display:block; font-size:1rem;">Carregando...</strong>
+            <span id="alunoMatriculaCard"
+              style="display:block; font-size:0.8rem; color:var(--text-secondary); margin:2px 0 5px;">Matrícula:
+              --</span>
+            <span class="fit-status-pill" style="padding:2px 9px; font-size:0.72rem;"><span
+                class="fit-dot-online"></span> Ativo</span>
+          </div>
+        </div>
+
+        <div class="fit-info-row">
+          <span class="fit-info-icon" style="margin-top:4px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+          </span>
+          <div>
+            <span class="fit-label">Objetivo</span>
+            <strong id="alunoObjetivoCard" style="font-size:0.9rem;">--</strong>
+          </div>
+        </div>
+        <div class="fit-info-row">
+          <span class="fit-info-icon" style="margin-top:4px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </span>
+          <div>
+            <span class="fit-label">Nível</span>
+            <strong id="alunoNivelCard" style="font-size:0.9rem;">--</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="fit-card">
+        <h3 class="fit-card-title" style="margin-bottom:14px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          Acesso rápido
+        </h3>
+        <div class="fit-col-stack" style="gap:10px;">
+          <a href="#listaProximos" class="fit-subcard">
+            <span style="display:inline-flex; align-items:center; gap:9px;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Ver meus agendamentos
+            </span>
+            <span>›</span>
+          </a>
+          <a href="/index.html" class="fit-subcard">
+            <span style="display:inline-flex; align-items:center; gap:9px;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
+              </svg>
+              Gerar treino
+            </span>
+            <span>›</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUNA CENTRO: AGENDAR AULA -->
+    <section class="fit-card">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <div>
+          <h1 style="margin:0; font-size:1.35rem;">Agendamentos</h1>
+          <p style="margin:2px 0 0; font-size:0.84rem; color:var(--text-secondary);">Agende suas aulas de forma rápida e
+            automática.</p>
+        </div>
+      </div>
+
+      <div
+        style="border:1px solid var(--borda); border-radius:12px; padding:16px; margin-bottom:16px; background:rgba(16,17,21,0.45);">
+        <div class="fit-card-header" style="margin-bottom:12px;">
+          <h2 class="fit-card-title" style="font-size:1rem;">Agendar aula</h2>
+        </div>
+
+        <div class="fit-subcard" style="margin-bottom:14px; font-size:0.84rem;">
+          <span>Seus dados já estão reconhecidos! Basta escolher a aula, a data e o horário.</span>
+        </div>
+
+        <form id="formAgendar" onsubmit="agendarAula(event)">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div>
+              <label class="fit-label" for="agData">Data da aula *</label>
+              <input type="date" id="agData" required>
+            </div>
+            <div>
+              <label class="fit-label" for="agModalidade">Modalidade *</label>
+              <select id="agModalidade">
+                <option value="Musculação">Musculação</option>
+                <option value="Funcional">Funcional</option>
+                <option value="Cardio">Cardio</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr auto; gap:12px; align-items:end; margin-bottom:12px;">
+            <div>
+              <label class="fit-label" for="agHorario">Horário *</label>
+              <select id="agHorario">
+                <option value="18h00 – 19h00">18h00 – 19h00</option>
+                <option value="19h00 – 20h00">19h00 – 20h00</option>
+                <option value="08h00 – 09h00">08h00 – 09h00</option>
+                <option value="10h00 – 11h00">10h00 – 11h00</option>
+              </select>
+            </div>
+            <span class="fit-status-pill" style="margin-bottom:4px;"><span class="fit-dot-online"></span> Vagas
+              disponíveis</span>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label class="fit-label" for="agObs">Observações (opcional)</label>
+            <textarea id="agObs" rows="2" maxlength="200"
+              placeholder="Ex.: foco em membros superiores, adaptação, etc."></textarea>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1.4fr; gap:12px;">
+            <button type="reset" class="fit-btn-dark">Cancelar</button>
+            <button type="submit" class="fit-btn-primary">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Agendar aula
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="fit-card-highlight" style="display:flex; align-items:center; gap:14px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
+          style="flex-shrink:0;">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="5" />
+          <circle cx="12" cy="12" r="1.5" fill="#FF6B1A" />
+        </svg>
+        <div>
+          <strong style="display:block; font-size:0.95rem; margin-bottom:3px;">Agendamento automático</strong>
+          <span style="font-size:0.82rem; color:var(--text-secondary);">O sistema verifica a disponibilidade, registra
+            sua aula e já atualiza sua agenda, tudo de forma automática.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUNA DIREITA: CALENDÁRIO + PRÓXIMOS -->
+    <section class="fit-col-stack">
+      <div class="fit-card">
+        <div class="fit-card-header" style="margin-bottom:6px;">
+          <h3 class="fit-card-title">Minha agenda</h3>
+          <span style="font-size:0.82rem; color:var(--text-secondary);">‹ Março ›</span>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-head">Dom</div>
+          <div class="cal-head">Seg</div>
+          <div class="cal-head">Ter</div>
+          <div class="cal-head">Qua</div>
+          <div class="cal-head">Qui</div>
+          <div class="cal-head">Sex</div>
+          <div class="cal-head">Sáb</div>
+          <div class="cal-day muted">23</div>
+          <div class="cal-day muted">24</div>
+          <div class="cal-day muted">25</div>
+          <div class="cal-day muted">26</div>
+          <div class="cal-day muted">27</div>
+          <div class="cal-day muted">28</div>
+          <div class="cal-day">1</div>
+          <div class="cal-day">2</div>
+          <div class="cal-day">3</div>
+          <div class="cal-day">4</div>
+          <div class="cal-day">5</div>
+          <div class="cal-day">6</div>
+          <div class="cal-day">7</div>
+          <div class="cal-day">8</div>
+          <div class="cal-day">9</div>
+          <div class="cal-day com-aula">10</div>
+          <div class="cal-day">11</div>
+          <div class="cal-day ativo">12</div>
+          <div class="cal-day">13</div>
+          <div class="cal-day com-aula">14</div>
+          <div class="cal-day">15</div>
+          <div class="cal-day">16</div>
+          <div class="cal-day com-aula">17</div>
+          <div class="cal-day">18</div>
+          <div class="cal-day">19</div>
+          <div class="cal-day">20</div>
+          <div class="cal-day">21</div>
+          <div class="cal-day">22</div>
+          <div class="cal-day">23</div>
+          <div class="cal-day">24</div>
+          <div class="cal-day">25</div>
+          <div class="cal-day">26</div>
+          <div class="cal-day">27</div>
+          <div class="cal-day">28</div>
+          <div class="cal-day">29</div>
+        </div>
+      </div>
+
+      <div class="fit-card" id="listaProximos">
+        <div class="fit-card-header">
+          <h3 class="fit-card-title">Próximos agendamentos</h3>
+          <span class="fit-link-more">Ver agenda completa ›</span>
+        </div>
+        <div id="agListaItens" class="fit-col-stack" style="gap:9px;">
+          <div class="fit-subcard">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="fit-date-badge"><span class="dia-sem">QUA</span><span class="dia-num">12</span></div>
+              <div>
+                <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
+                <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
+              </div>
+            </div>
+            <span>›</span>
+          </div>
+          <div class="fit-subcard">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="fit-date-badge"><span class="dia-sem">SEX</span><span class="dia-num">14</span></div>
+              <div>
+                <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
+                <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
+              </div>
+            </div>
+            <span>›</span>
+          </div>
+          <div class="fit-subcard">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="fit-date-badge"><span class="dia-sem">SEG</span><span class="dia-num">17</span></div>
+              <div>
+                <div style="font-weight:700; font-size:0.9rem;">Funcional</div>
+                <div style="font-size:0.8rem; color:var(--text-secondary);">19h00 – 20h00</div>
+              </div>
+            </div>
+            <span>›</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DIAS_SEMANA_CURTO = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+
+    function formatarDiaSemana(dataStr) {
+      const partes = (dataStr || '').split('-');
+      if (partes.length !== 3) return { sem: 'AULA', dia: '--' };
+      const dt = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+      return {
+        sem: DIAS_SEMANA_CURTO[dt.getDay()] || 'AULA',
+        dia: partes[2]
+      };
+    }
+
+    async function carregarDadosAgendamentos() {
+      try {
+        const resPerfil = await FitApp.api('/api/perfil');
+        const aluno = resPerfil.aluno;
+        if (aluno) {
+          document.getElementById('alunoNomeCard').textContent = aluno.nome || 'Aluno';
+          document.getElementById('alunoMatriculaCard').textContent = `Matrícula: ${aluno.matricula || '20260001'}`;
+          document.getElementById('alunoObjetivoCard').textContent = aluno.objetivo || 'Não definido';
+          document.getElementById('alunoNivelCard').textContent = aluno.nivel || 'Iniciante';
+          if (aluno.avatar_url) {
+            document.getElementById('alunoAvatarCard').src = aluno.avatar_url;
+          }
+        }
+      } catch (_) { }
+
+      try {
+        const res = await FitApp.api('/api/agendamentos');
+        const lista = res.proximos_agendamentos || [];
+        const container = document.getElementById('agListaItens');
+        if (!container) return;
+
+        if (lista.length === 0) {
+          container.innerHTML = `<div class="fit-subcard" style="justify-content:center; color:var(--text-secondary); font-size:0.85rem;">Nenhuma aula futura agendada.</div>`;
+          return;
+        }
+
+        container.innerHTML = lista.map((ag) => {
+          const { sem, dia } = formatarDiaSemana(ag.data_aula);
+          const mod = (ag.modalidade || 'Musculação');
+          const modCap = mod.charAt(0).toUpperCase() + mod.slice(1);
+          return `
+          <div class="fit-subcard" style="cursor:pointer;" title="Clique para cancelar este agendamento" onclick="cancelarAgendamento(${ag.id_agendamento}, '${modCap}', '${ag.data_aula}')">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="fit-date-badge"><span class="dia-sem">${sem}</span><span class="dia-num">${dia}</span></div>
+              <div>
+                <div style="font-weight:700; font-size:0.9rem;">${modCap}</div>
+                <div style="font-size:0.8rem; color:var(--text-secondary);">${ag.horario}</div>
+              </div>
+            </div>
+            <span style="color:#EF4444; font-size:0.8rem;">Cancelar</span>
+          </div>
+        `;
+        }).join('');
+      } catch (_) { }
+    }
+
+    async function cancelarAgendamento(id, modalidade, dataAula) {
+      if (!confirm(`Deseja cancelar a aula de ${modalidade} em ${dataAula}?`)) return;
+      try {
+        await FitApp.api(`/api/agendamentos/${id}`, { method: 'DELETE' });
+        FitApp.ui.toast('Agendamento cancelado.', 'sucesso');
+        await carregarDadosAgendamentos();
+      } catch (err) {
+        FitApp.ui.toast(err.message || 'Erro ao cancelar.', 'erro');
+      }
+    }
+
+    async function agendarAula(e) {
+      e.preventDefault();
+      const data = document.getElementById('agData').value;
+      const modalidade = document.getElementById('agModalidade').value;
+      const horario = document.getElementById('agHorario').value;
+      const observacoes = document.getElementById('agObs').value;
+
+      const sucesso = await FitApp.agendamento.agendarAula(data, modalidade, horario, observacoes);
+      if (sucesso) {
+        document.getElementById('agObs').value = '';
+        await carregarDadosAgendamentos();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const inputData = document.getElementById('agData');
+      if (inputData) {
+        const hoje = new Date().toISOString().split('T')[0];
+        inputData.min = hoje;
+        if (!inputData.value) inputData.value = hoje;
+      }
+
+      // Torna os dias do calendário clicáveis para preencher a data no formulário
+      document.querySelectorAll('.cal-day:not(.muted)').forEach((el) => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.cal-day.ativo').forEach((d) => d.classList.remove('ativo'));
+          el.classList.add('ativo');
+          const diaNum = el.textContent.trim().padStart(2, '0');
+          const base = (inputData && inputData.value ? inputData.value : new Date().toISOString().split('T')[0]).slice(0, 8);
+          if (inputData) inputData.value = `${base}${diaNum}`;
+        });
+      });
+
+      // Ativa o badge "Agendamento inteligente"
+      const badgeInteligente = document.querySelector('.fit-badge-kiara');
+      if (badgeInteligente) {
+        badgeInteligente.style.cursor = 'pointer';
+        badgeInteligente.title = 'Agendar automaticamente para amanhã';
+        badgeInteligente.addEventListener('click', async () => {
+          try {
+            const res = await FitApp.api('/api/agendamentos/inteligente', { method: 'POST' });
+            FitApp.ui.toast(res.mensagem || 'Agendamento inteligente realizado!', 'sucesso');
+            await carregarDadosAgendamentos();
+          } catch (err) {
+            FitApp.ui.toast(err.message || 'Não foi possível agendar automaticamente.', 'erro');
+          }
+        });
+      }
+
+      carregarDadosAgendamentos();
+    });
+  </script>
+</body>
+
+</html>

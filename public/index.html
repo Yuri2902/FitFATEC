@@ -1,354 +1,295 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kiara — Assistente Virtual FitFATEC</title>
-<link rel="stylesheet" href="CSS.css">
-<link rel="stylesheet" href="kiara-ajustes.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Início — FitFATEC</title>
+  <link rel="stylesheet" href="CSS.css">
+  <link rel="stylesheet" href="kiara-ajustes.css">
+  <script src="visual.js" defer></script>
 </head>
 <body>
-<header>
-  <div class="marca"><img src="img/kiara.svg" alt="Kiara, mascote da FitFATEC" width="40" height="40"> <span>Kiara · FitFATEC</span></div>
-  <a class="btn btn-claro" id="linkConta" href="/conta">Entrar</a>
+
+<header class="fit-navbar">
+  <div class="fit-nav-left">
+    <a href="/index.html" class="fit-brand">
+      <img src="img/kiara-logo.png" alt="Kiara">
+      <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
+    </a>
+    <div class="fit-divider-v"></div>
+    <nav class="fit-nav-links">
+      <a href="/index.html" class="fit-nav-link ativo">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        Início
+      </a>
+      <a href="/pages/perfil.html" class="fit-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Meu perfil
+      </a>
+      <a href="/pages/treinos.html" class="fit-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>
+        Meus treinos
+      </a>
+      <a href="/pages/agendamentos.html" class="fit-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Agendamentos
+      </a>
+    </nav>
+  </div>
+  <div class="fit-nav-right">
+    <div class="fit-divider-v"></div>
+    <a id="navAuthBtn" href="/pages/conta.html" class="fit-btn-auth">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <span>Entrar</span>
+    </a>
+  </div>
 </header>
 
-<main class="app">
-  <aside class="painel">
-    <h2>Dados do aluno</h2>
-    <p id="estadoSessao" role="status">Verificando sua sessão...</p>
+<main class="fit-container fit-grid-3col">
+  <!-- COLUNA ESQUERDA -->
+  <section class="fit-col-stack">
+    <div class="fit-card">
+      <div class="fit-card-header">
+        <h2 class="fit-card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Dados do aluno
+        </h2>
+      </div>
 
-    <label for="idade">Idade</label>
-    <input id="idade" type="number" min="14" max="90" value="25">
+      <div class="fit-info-row">
+        <svg class="fit-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 15c.7-1.5 2-2 3-2s2.3.5 3 2"/><line x1="14" y1="10" x2="18" y2="10"/><line x1="14" y1="14" x2="18" y2="14"/></svg>
+        <div class="fit-info-body">
+          <label class="fit-label" for="alunoMatricula">Matrícula</label>
+          <div class="fit-input-with-icon">
+            <input type="text" id="alunoMatricula" readonly value="20260001" style="padding-left:12px; padding-right:36px;">
+            <button type="button" class="right-btn" title="Copiar matrícula" onclick="FitApp.ui.copiarTexto(document.getElementById('alunoMatricula').value, this)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
 
-    <label for="objetivo">Objetivo</label>
-    <select id="objetivo">
-      <option>ganhar massa muscular</option>
-      <option>emagrecer</option>
-      <option>condicionamento</option>
-      <option>saúde geral</option>
-    </select>
+      <div class="fit-info-row">
+        <svg class="fit-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+        <div class="fit-info-body">
+          <span class="fit-label">Objetivo</span>
+          <div id="alunoObjetivo" class="fit-input-box">Ganhar massa muscular</div>
+        </div>
+      </div>
 
-    <label for="nivel">Nível</label>
-    <select id="nivel">
-      <option>iniciante</option>
-      <option>intermediário</option>
-      <option>avançado</option>
-    </select>
-
-    <label for="frequencia_semanal">Treinos por semana</label>
-    <input id="frequencia_semanal" type="number" min="0" max="7" value="3">
-
-    <label for="meses_matricula">Meses de matrícula</label>
-    <input id="meses_matricula" type="number" min="0" max="120" value="3">
-
-    <label for="faltas_ultimo_mes">Faltas no último mês</label>
-    <input id="faltas_ultimo_mes" type="number" min="0" max="30" value="4">
-
-    <div class="risco">
-      <div class="risco-rotulo">Risco de desistência</div>
-      <div id="riscoTexto" aria-live="polite">--</div>
-      <div class="barra"><div id="riscoBarra"></div></div>
+      <div class="fit-info-row">
+        <svg class="fit-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="14" width="3" height="6" rx="1"/><rect x="10.5" y="10" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="15" rx="1"/></svg>
+        <div class="fit-info-body">
+          <span class="fit-label">Nível</span>
+          <div id="alunoNivel" class="fit-input-box">Intermediário</div>
+        </div>
+      </div>
     </div>
 
-    <div class="acoes-painel">
-      <button type="button" id="btnSerie">Ver minha série</button>
-      <button type="button" id="btnAgendar" class="btn-secundario" disabled>Agendar aula</button>
-    </div>
-  </aside>
+    <div class="fit-card">
+      <div class="fit-card-header">
+        <h2 class="fit-card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Próxima aula agendada
+        </h2>
+      </div>
 
+      <a href="/pages/agendamentos.html" id="boxProximaAula" class="fit-subcard">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div>
+            <div id="proximaAulaData" style="font-weight:700; font-size:0.9rem;">Quarta, 12/03 • 18h00</div>
+            <div id="proximaAulaMod" style="font-size:0.82rem; color:var(--text-secondary);">Musculação</div>
+          </div>
+        </div>
+        <span style="color:var(--text-secondary);">›</span>
+      </a>
+
+      <a href="/pages/agendamentos.html" class="fit-btn-outline-orange" style="width:100%; margin-top:14px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Agendar nova aula
+      </a>
+    </div>
+  </section>
+
+  <!-- COLUNA CENTRO (CHAT KIARA) -->
   <section class="chat">
-    <div id="mensagens" aria-live="polite">
-      <div class="msg bot">Oi! Eu sou a Kiara, assistente virtual da FitFATEC, 24h por dia. 🐆 Posso agendar sua aula, montar sua série, explicar o aquecimento e os treinos principal e secundário. Como posso ajudar?</div>
-    </div>
     <div class="informacoes-kiara">
-      <button type="button" id="btnSobreKiara" class="btn-sobre-kiara" aria-haspopup="dialog">Sobre a Kiara <span aria-hidden="true">ⓘ</span></button>
-      <span id="modoKiara" role="status" aria-live="polite" hidden></span>
+      <div class="kiara-header-left">
+        <img src="img/kiara-logo.png" alt="Kiara" class="kiara-avatar-circle">
+        <div class="kiara-title-group">
+          <strong>Kiara</strong>
+          <span>• Assistente FitFATEC</span>
+        </div>
+      </div>
+      <span class="fit-status-pill">
+        <span class="fit-dot-online"></span>
+        Online
+      </span>
     </div>
+
+    <div id="mensagens" aria-live="polite">
+      <div class="msg bot">Oi! Eu sou a Kiara, sua assistente virtual da FitFATEC. 👋
+Aqui você pode gerar treinos, agendar aulas, acompanhar seus resultados e tirar dúvidas sobre os treinos e exercícios.
+
+Como posso te ajudar hoje?</div>
+    </div>
+
+    <div class="sugestoes">
+      <button type="button" class="chip" onclick="enviarKiara('Gerar novo treino')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>
+        Gerar treino
+      </button>
+      <button type="button" class="chip" onclick="window.location.href='/pages/treinos.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+        Ver meus treinos
+      </button>
+      <button type="button" class="chip" onclick="window.location.href='/pages/agendamentos.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Agendar aula
+      </button>
+      <button type="button" class="chip" onclick="window.location.href='/pages/perfil.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Editar perfil
+      </button>
+    </div>
+
     <form id="formChat">
-      <input id="pergunta" type="text" placeholder="Digite sua mensagem..." autocomplete="off" required aria-label="Mensagem">
-      <button id="enviar" type="submit" disabled>Enviar</button>
+      <input id="pergunta" type="text" placeholder="Digite sua mensagem..." autocomplete="off" required>
+      <button id="enviar" type="submit" class="fit-btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Enviar
+      </button>
     </form>
+  </section>
+
+  <!-- COLUNA DIREITA -->
+  <section class="fit-col-stack">
+    <div class="fit-card">
+      <div class="fit-card-header">
+        <h2 class="fit-card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>
+          Treino de hoje
+        </h2>
+        <a href="/pages/treinos.html" class="fit-link-more">Ver completo ›</a>
+      </div>
+
+      <div id="treinoHoje" class="fit-subcard">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="1.8"><path d="M7 18c-2 0-3-1.5-3-4 0-3 2-7 5-8l2 3c-1.5 1-2 2.5-2 4h5c2.5 0 4 1.5 4 3.5S16.5 20 14 20H7z"/></svg>
+          <div>
+            <div style="font-weight:700; font-size:0.95rem;">Superiores A</div>
+            <div style="font-size:0.82rem; color:var(--text-secondary);">Peito • Ombro • Tríceps</div>
+          </div>
+        </div>
+        <a href="/pages/treinos.html" class="fit-btn-primary" style="padding:9px 11px; border-radius:9px;" title="Iniciar treino">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="fit-card">
+      <div class="fit-card-header">
+        <h2 class="fit-card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Próximos agendamentos
+        </h2>
+        <a href="/pages/agendamentos.html" class="fit-link-more">Ver agenda ›</a>
+      </div>
+
+      <div id="proximosAgendamentos" class="fit-col-stack" style="gap:10px;">
+        <a href="/pages/agendamentos.html" class="fit-subcard">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="fit-date-badge"><span class="dia-sem">QUA</span><span class="dia-num">12</span></div>
+            <div>
+              <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
+              <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
+            </div>
+          </div>
+          <span style="color:var(--text-secondary);">›</span>
+        </a>
+        <a href="/pages/agendamentos.html" class="fit-subcard">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="fit-date-badge"><span class="dia-sem">SEX</span><span class="dia-num">14</span></div>
+            <div>
+              <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
+              <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
+            </div>
+          </div>
+          <span style="color:var(--text-secondary);">›</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="fit-card">
+      <div class="fit-card-header">
+        <h2 class="fit-card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Última série gerada
+        </h2>
+        <a href="/pages/treinos.html" class="fit-link-more">Ver série ›</a>
+      </div>
+
+      <div id="ultimaSerieCard" class="fit-subcard" style="justify-content:flex-start;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        <div>
+          <div style="font-weight:700; font-size:0.9rem;">Hipertrofia – Intermediário</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary);">3 treinos por semana • Gerada em 08/03</div>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
 
+<nav class="fit-mobile-nav">
+  <a href="/index.html" class="ativo">Início</a>
+  <a href="/pages/treinos.html">Treinos</a>
+  <a href="/pages/agendamentos.html">Agenda</a>
+  <a href="/pages/perfil.html">Perfil</a>
+</nav>
+
 <script>
-  const camposNumericos = ["idade", "frequencia_semanal", "meses_matricula", "faltas_ultimo_mes"];
-  const camposTexto = ["objetivo", "nivel"];
-  const historico = [];
-  let usuarioSessao = null;
+  function enviarKiara(texto) {
+    document.getElementById('pergunta').value = texto;
+    document.getElementById('formChat').requestSubmit();
+  }
 
-  async function carregarSessao() {
-    const status = document.getElementById("estadoSessao");
-    const link = document.getElementById("linkConta");
-    const enviar = document.getElementById("enviar");
-    const agendar = document.getElementById("btnAgendar");
+  async function carregarDashboard() {
     try {
-      const r = await fetch("/api/me", { credentials: "same-origin" });
-      const d = await r.json();
-      usuarioSessao = r.ok ? d.usuario : null;
-      if (usuarioSessao) {
-        status.textContent = "Olá, " + usuarioSessao.nome +
-          "! Matrícula: " + (usuarioSessao.matricula || "em atualização");
-        link.textContent = "Minha conta";
-        enviar.disabled = false;
-        agendar.disabled = false;
-      } else {
-        status.textContent = "Entre na sua conta para conversar e agendar aulas.";
-        link.textContent = "Entrar";
-        enviar.disabled = true;
-        agendar.disabled = true;
+      const data = await FitApp.api('/api/dashboard');
+      if (!data.ok) return;
+
+      if (data.aluno) {
+        document.getElementById('alunoMatricula').value = data.aluno.matricula || '20260001';
+        document.getElementById('alunoObjetivo').textContent = data.aluno.objetivo || 'Ganhar massa muscular';
+        document.getElementById('alunoNivel').textContent = data.aluno.nivel || 'Intermediário';
       }
-    } catch (_) {
-      usuarioSessao = null;
-      status.textContent = "Não foi possível verificar sua sessão. Atualize a página.";
-      enviar.disabled = true;
-      agendar.disabled = true;
-    }
-  }
 
-  // Lê os campos; devolve null se algum número estiver vazio ou fora do limite
-  function lerAluno() {
-    const aluno = {};
-    for (const id of camposNumericos) {
-      const el = document.getElementById(id);
-      const valor = Number(el.value);
-      if (el.value === "" || Number.isNaN(valor) || valor < Number(el.min) || valor > Number(el.max)) {
-        return null;
-      }
-      aluno[id] = valor;
-    }
-    for (const id of camposTexto) {
-      aluno[id] = document.getElementById(id).value;
-    }
-    return aluno;
-  }
-
-  async function chamarApi(url, corpo) {
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(corpo)
-    });
-    let dados = {};
-    try { dados = await r.json(); } catch (_) { /* resposta sem JSON */ }
-    return { ok: r.ok, dados };
-  }
-
-  function mostrarRisco(risco) {
-    const texto = document.getElementById("riscoTexto");
-    const barra = document.getElementById("riscoBarra");
-    if (typeof risco !== "number" || Number.isNaN(risco)) {
-      texto.textContent = "--";
-      barra.style.width = "0";
-      return;
-    }
-    const pct = Math.max(0, Math.min(100, Math.round(risco * 100)));
-    texto.textContent = pct + "%";
-    barra.style.width = pct + "%";
-    barra.style.background = pct > 60 ? "#e03131" : pct > 35 ? "#f59f00" : "#2f9e44";
-  }
-
-  async function atualizarRisco() {
-    const aluno = lerAluno();
-    if (!aluno) { mostrarRisco(null); return; }
-    try {
-      const { ok, dados } = await chamarApi("/api/risco", { aluno });
-      mostrarRisco(ok ? dados.risco : null);
-    } catch (_) {
-      mostrarRisco(null);
-    }
-  }
-
-  function adicionarMensagem(texto, tipo) {
-    const div = document.createElement("div");
-    div.className = "msg " + tipo;
-    div.textContent = texto;            // textContent evita injeção de HTML
-    const area = document.getElementById("mensagens");
-    // A nova resposta não deve arrancar o usuário de mensagens antigas.
-    const estavaNoFim = area.scrollHeight - area.scrollTop - area.clientHeight < 120;
-    area.appendChild(div);
-    // Se o próprio usuário enviou uma mensagem, ele espera vê-la no fim.
-    if (tipo === "user" || estavaNoFim) area.scrollTop = area.scrollHeight;
-    return div;
-  }
-
-  document.getElementById("formChat").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const campo = document.getElementById("pergunta");
-    const botao = document.getElementById("enviar");
-    const texto = campo.value.trim();
-    if (!texto) return;
-    if (!usuarioSessao) {
-      adicionarMensagem("Faça login para conversar com a Kiara.", "bot erro");
-      return;
-    }
-
-    const aluno = lerAluno();
-    if (!aluno) {
-      adicionarMensagem("Confira os dados do aluno: há campos vazios ou fora do limite.", "bot erro");
-      return;
-    }
-
-    adicionarMensagem(texto, "user");
-    historico.push({ role: "user", content: texto });
-    campo.value = "";
-    botao.disabled = true;
-    const aguardando = adicionarMensagem("Pensando...", "bot");
-    const indicadorModo = document.getElementById("modoKiara");
-    indicadorModo.hidden = true; // não mostrar o estado da resposta anterior enquanto processa
-
-    try {
-      // Limita o histórico para evitar mensagens enormes e manter o chat responsivo.
-      if (historico.length > 20) historico.splice(0, historico.length - 20);
-      const { ok, dados } = await chamarApi("/api/chat", { aluno, historico });
-      if (!ok) {
-        if (dados.erro === "Não autenticado.") {
-          await carregarSessao();
+      if (data.proxima_aula) {
+        document.getElementById('proximaAulaData').textContent = `${data.proxima_aula.data_aula} • ${data.proxima_aula.horario}`;
+        if (data.proxima_aula.modalidade) {
+          document.getElementById('proximaAulaMod').textContent = data.proxima_aula.modalidade;
         }
-        throw new Error(dados.erro || "Erro no servidor");
       }
-      aguardando.textContent = dados.resposta;
-      historico.push({ role: "assistant", content: dados.resposta });
-      mostrarRisco(dados.risco);
-      const estadoKiara = document.getElementById("modoKiara");
-      // Indicador da resposta recebida. Não atribui Gemini a respostas locais.
-      // Informações sobre fornecedores de IA ficam em "Sobre a Kiara".
-      const comIa = dados.modo === "gemini";
-      estadoKiara.hidden = false;
-      estadoKiara.dataset.modo = comIa ? "ia" : "offline";
-      estadoKiara.textContent = comIa ? "IA ativa" : "Modo offline";
-    } catch (err) {
-      aguardando.textContent = "Ops, algo deu errado: " + err.message;
-      aguardando.classList.add("erro");
-      historico.pop();                  // remove a pergunta que não foi respondida
-    } finally {
-      botao.disabled = !usuarioSessao;
-      campo.focus();
-      // A rolagem do histórico é administrada pelo visual.js,
-      // respeitando quem está lendo mensagens anteriores.
-    }
-  });
 
-  [...camposNumericos, ...camposTexto].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener("change", atualizarRisco);
-    el.addEventListener("input", atualizarRisco);
-  });
-  atualizarRisco();
-  carregarSessao();
-</script>
-
-<dialog id="dlgSobreKiara" aria-labelledby="tituloSobreKiara" class="dlg-sobre-kiara">
-  <h2 id="tituloSobreKiara">Sobre a Kiara</h2>
-  <p>A Kiara é a assistente virtual criada para o projeto FitFATEC. Sua experiência, integração com o sistema e seleção de exercícios são desenvolvidas pela equipe do projeto.</p>
-  <p>Para conversar, ela utiliza modelos de inteligência artificial Gemini, fornecidos pelo Google, e uma biblioteca licenciada de exercícios. Quando a IA não está disponível, pode utilizar respostas predefinidas.</p>
-  <p>As sugestões de treino não substituem orientação profissional. Os exercícios incluídos no catálogo ampliado seguem os avisos de licença e atribuição documentados no projeto.</p>
-  <button type="button" id="fecharSobreKiara">Fechar</button>
-</dialog>
-
-<dialog id="dlgAgenda" aria-labelledby="tituloAgenda">
-  <form id="formAgenda" method="dialog">
-    <h2 id="tituloAgenda">Agendar aula</h2>
-    <p id="agAluno" role="status">Sua conta será identificada automaticamente.</p>
-    <label for="agData">Data</label>
-    <input id="agData" type="date" required>
-    <label for="agModalidade">Modalidade</label>
-    <select id="agModalidade">
-      <option>musculação</option><option>funcional</option><option>aeróbico</option>
-    </select>
-    <label for="agHorario">Horário</label>
-    <select id="agHorario" required><option value="">Escolha a data primeiro</option></select>
-    <div id="agMsg" class="feedback" role="status"></div>
-    <div class="botoes-dialog">
-      <button type="submit" id="agConfirmar">Confirmar</button>
-      <button type="button" id="agFechar" class="btn-secundario">Fechar</button>
-    </div>
-  </form>
-</dialog>
-
-<script>
-  const sobreKiara = document.getElementById("dlgSobreKiara");
-  document.getElementById("btnSobreKiara").addEventListener("click", () => sobreKiara.showModal());
-  document.getElementById("fecharSobreKiara").addEventListener("click", () => sobreKiara.close());
-
-  // ---- Minha série (aquecimento + treino principal + secundário) ----
-  function formatarSerie(s) {
-    const linhas = x => x.exercicios.map(e =>
-      "• " + e.exercicio + ": " + e.series + "x " + e.repeticoes + (e.descanso_s ? " (descanso " + e.descanso_s + "s)" : "")).join("\n");
-    const aq = s.aquecimento.map(a => "• " + a.nome + " (" + a.duracao_min + " min)").join("\n");
-    return "Sua série (" + s.nivel + " · " + s.objetivo + "):\n\nAquecimento:\n" + aq +
-      "\n\nTreino principal — " + s.principal.foco + ":\n" + linhas(s.principal) +
-      "\n\nTreino secundário — " + s.secundario.foco + ":\n" + linhas(s.secundario);
-  }
-  document.getElementById("btnSerie").addEventListener("click", async () => {
-    const aluno = lerAluno();
-    if (!aluno) { adicionarMensagem("Confira os dados do aluno: há campos vazios ou fora do limite.", "bot erro"); return; }
-    try {
-      const r = await fetch("/api/serie?nivel=" + encodeURIComponent(aluno.nivel) + "&objetivo=" + encodeURIComponent(aluno.objetivo));
-      adicionarMensagem(formatarSerie(await r.json()), "bot");
-    } catch (_) { adicionarMensagem("Não consegui buscar sua série agora.", "bot erro"); }
-  });
-
-  // ---- Agendar aula ----
-  const dlg = document.getElementById("dlgAgenda");
-  const agData = document.getElementById("agData");
-  const agHorario = document.getElementById("agHorario");
-  const agMsg = document.getElementById("agMsg");
-
-  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
-  function feedback(txt, tipo) { agMsg.textContent = txt; agMsg.className = "feedback " + tipo; agMsg.style.display = txt ? "block" : "none"; }
-
-  async function carregarHorarios() {
-    if (!agData.value) return;
-    agHorario.innerHTML = "<option value=''>Carregando...</option>";
-    try {
-      const r = await fetch("/api/horarios?data=" + agData.value);
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.erro);
-      agHorario.innerHTML = "";
-      d.horarios.forEach(h => {
-        const o = document.createElement("option");
-        o.value = h.horario;
-        o.textContent = h.horario + (h.vagas ? " — " + h.vagas + " vagas" : " — lotado");
-        o.disabled = h.vagas === 0;
-        agHorario.appendChild(o);
-      });
-    } catch (e) {
-      agHorario.innerHTML = "<option value=''>Indisponível</option>";
-      feedback(e.message || "Erro ao consultar horários.", "erro");
+      if (data.treino_hoje) {
+        document.getElementById('treinoHoje').innerHTML = `
+          <div style="display:flex; align-items:center; gap:12px;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="1.8"><path d="M7 18c-2 0-3-1.5-3-4 0-3 2-7 5-8l2 3c-1.5 1-2 2.5-2 4h5c2.5 0 4 1.5 4 3.5S16.5 20 14 20H7z"/></svg>
+            <div>
+              <div style="font-weight:700; font-size:0.95rem;">${data.treino_hoje.titulo}</div>
+              <div style="font-size:0.82rem; color:var(--text-secondary);">${data.treino_hoje.subtitulo || ''}</div>
+            </div>
+          </div>
+          <a href="/pages/treinos.html" class="fit-btn-primary" style="padding:9px 11px; border-radius:9px;">▶</a>
+        `;
+      }
+    } catch (_) {
+      // Mantém visualização padrão até o aluno fazer login
     }
   }
 
-  document.getElementById("btnAgendar").addEventListener("click", () => {
-    if (!usuarioSessao) { adicionarMensagem("Entre na sua conta para agendar uma aula.", "bot erro"); return; }
-    document.getElementById("agAluno").textContent = "Agendamento para " +
-      usuarioSessao.nome + " (matrícula " + (usuarioSessao.matricula || "indisponível") + ")";
-    const hoje = new Date(), max = new Date(); max.setDate(max.getDate() + 30);
-    agData.min = iso(hoje); agData.max = iso(max);
-    feedback("", "");
-    dlg.showModal();
-  });
-  document.getElementById("agFechar").addEventListener("click", () => dlg.close());
-  agData.addEventListener("change", carregarHorarios);
-
-  document.getElementById("formAgenda").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const botao = document.getElementById("agConfirmar");
-    botao.disabled = true;
-    try {
-      const { ok, dados } = await chamarApi("/api/agendar", {
-        data: agData.value,
-        horario: agHorario.value,
-        modalidade: document.getElementById("agModalidade").value
-      });
-      if (!ok) throw new Error(dados.erro || "Erro ao agendar.");
-      dlg.close();
-      adicionarMensagem(dados.mensagem + " Te espero lá! 🐆", "bot");
-    } catch (err) { feedback(err.message, "erro"); }
-    finally { botao.disabled = false; }
-  });
+  document.addEventListener('DOMContentLoaded', carregarDashboard);
 </script>
-<script src="visual.js"></script>
 </body>
 </html>
