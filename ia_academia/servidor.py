@@ -10,6 +10,11 @@ from assistente import responder_com_plano, risco_de_desistir
 import catalogo
 import biblioteca_exercicios
 import plano_kiara
+import personalidades  # Dev 3: personalidades da Kiara (maromba, nerd, sem filtro +18...)
+import ajustes_banco  # Dev 3: cria as colunas novas que faltarem em bancos já existentes
+from treinos import agenda as regras_agenda  # Dev 3: regras de agendamento
+from treinos import plano_semanal  # Dev 3: plano de treino semanal salvo em Meus treinos
+from treinos.regras import ErroPerfil
 from auth_utils import validar_cadastro, gerar_hash_senha, verificar_senha
 import mysql.connector
 from mysql.connector import Error
@@ -71,6 +76,13 @@ def garantir_tabela_chat():
 
 try:
     garantir_tabela_chat()
+except Exception:
+    pass
+
+# Dev 3: bancos criados antes desta versão não têm aluno.personalidade nem
+# treino_exercicios.etapa. Igual à tabela do chat, o servidor ajusta sozinho ao iniciar.
+try:
+    ajustes_banco.garantir_colunas(get_db_connection)
 except Exception:
     pass
 
@@ -186,6 +198,13 @@ def formatar_aluno_publico(aluno):
     copia["notificacoes"] = bool(copia.get("notificacoes", 1))
     copia["acessibilidade"] = copia.get("acessibilidade") or "padrao"
     copia["tema"] = copia.get("tema") or "escuro"
+    # Dev 3: a data de nascimento vira texto AAAA-MM-DD para caber na sessão e no JSON.
+    # Quando ela existe, a idade real passa a ir para o chat (sem ela, a tela manda 22).
+    nascimento = copia.get("data_nascimento")
+    if isinstance(nascimento, (date, datetime)):
+        copia["data_nascimento"] = nascimento.strftime("%Y-%m-%d")
+    copia["idade"] = personalidades.calcular_idade(copia.get("data_nascimento"))
+    copia["personalidade"] = copia.get("personalidade") or personalidades.PADRAO
     return copia
 
 
@@ -317,6 +336,19 @@ def api_chat():
     aluno["nome"] = usuario.get("nome", "Aluno")
     ultima_msg_user = historico[-1]["content"]
 
+    # Dev 3: personalidade da Kiara. Lê o aluno no banco a cada mensagem para a trava
+    # do modo +18 valer mesmo com a sessão desatualizada; se o banco falhar, usa a sessão.
+    try:
+        dados_aluno = buscar_aluno_por_id(id_aluno) or usuario
+    except Exception:
+        dados_aluno = usuario
+    idade_real = personalidades.calcular_idade(dados_aluno.get("data_nascimento"))
+    if idade_real is not None:
+        aluno["idade"] = idade_real
+    aluno["personalidade"] = personalidades.resolver(dados_aluno.get("personalidade"), idade_real)
+    # Dev 3: treinos salvos do aluno, para a Kiara saber qual é o treino de hoje.
+    aluno["plano_semana"] = resumo_treinos_para_kiara(id_aluno)
+
     try:
         msg_lower = ultima_msg_user.lower()
         
@@ -377,7 +409,8 @@ def api_chat():
             "resposta": resposta,
             "modo": modo,
             "eh_treino": bool(eh_treino),
-            "risco": float(risco_de_desistir(aluno))
+            "risco": float(risco_de_desistir(aluno)),
+            "personalidade": aluno["personalidade"],  # Dev 3: modo usado nesta resposta
         })
     except Exception as e:
         print("Erro no chat:", e)
@@ -388,6 +421,86 @@ def api_chat():
 def api_limpar_chat():
     session.pop("plano_kiara", None)
     return jsonify({"mensagem": "Conversa reiniciada."}), 200
+
+
+# ---------------------------------------------------------------- Personalidade da Kiara (Dev 3)
+# O aluno escolhe como a Kiara fala com ele (ver personalidades.py). A escolha fica em
+# aluno.personalidade; o modo "Sem filtro" exige 18 anos pela data de nascimento do perfil.
+
+def salvar_personalidade(id_aluno, codigo):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE aluno SET personalidade = %s WHERE id_aluno = %s", (codigo, id_aluno))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def resumo_treinos_para_kiara(id_aluno):
+    """Texto com os treinos salvos do aluno para o prompt. Vazio se não houver ou se o banco falhar."""
+    try:
+        conn = get_db_connection()
+    except Exception:
+        return ""
+    try:
+        return plano_semanal.resumo_para_kiara(conn, id_aluno)
+    except Exception:
+        return ""
+    finally:
+        conn.close()
+
+
+@app.get("/api/personalidades")
+@login_obrigatorio
+def api_personalidades():
+    """Lista os modos para o seletor, dizendo quais estão liberados para este aluno."""
+    try:
+        aluno = buscar_aluno_por_id(session["usuario"]["id_aluno"]) or session["usuario"]
+    except Error:
+        aluno = session["usuario"]
+    idade = personalidades.calcular_idade(aluno.get("data_nascimento"))
+    return jsonify({
+        "ok": True,
+        "atual": personalidades.resolver(aluno.get("personalidade"), idade),
+        "idade": idade,
+        "personalidades": personalidades.listar_para_aluno(idade),
+    })
+
+
+@app.put("/api/perfil/personalidade")
+@app.post("/api/perfil/personalidade")
+@login_obrigatorio
+def api_salvar_personalidade():
+    """Salva o modo escolhido. Responde 403 se o modo for +18 e o aluno não puder usar."""
+    corpo = request.get_json(silent=True) or {}
+    codigo = str(corpo.get("personalidade") or "").strip().lower()
+    if codigo not in personalidades.PERSONALIDADES:
+        return jsonify({"ok": False, "erro": "Personalidade inválida."}), 400
+
+    id_aluno = session["usuario"]["id_aluno"]
+    try:
+        aluno = buscar_aluno_por_id(id_aluno) or {}
+        # A idade vem do banco, nunca do navegador, para a trava não ser contornada.
+        idade = personalidades.calcular_idade(aluno.get("data_nascimento"))
+        liberada, motivo = personalidades.verificar_acesso(codigo, idade)
+        if not liberada:
+            return jsonify({"ok": False, "erro": motivo}), 403
+        salvar_personalidade(id_aluno, codigo)
+    except Error:
+        return jsonify({"ok": False, "erro": "Erro ao salvar a personalidade."}), 500
+
+    session["usuario"]["personalidade"] = codigo
+    session.modified = True
+    escolhida = personalidades.PERSONALIDADES[codigo]
+    return jsonify({
+        "ok": True,
+        "personalidade": codigo,
+        "nome": escolhida["nome"],
+        "saudacao": escolhida["saudacao"],
+        "mensagem": f"Kiara agora está no modo {escolhida['nome']}.",
+    })
 
 
 # ---------------------------------------------------------------- Treinos
@@ -401,7 +514,9 @@ def api_serie():
 # ---------------------------------------------------------------- Agendamento
 HORARIOS = [f"{h:02d}:00" for h in range(6, 22)]
 CAPACIDADE_POR_HORARIO = 10
-MODALIDADES = ["musculação", "funcional", "aeróbico"]
+# Dev 3: "cardio" incluído porque é a opção que a tela de agendamentos oferece;
+# antes ela sempre recebia "Modalidade inválida".
+MODALIDADES = ["musculação", "funcional", "aeróbico", "cardio"]
 DIAS_MAX_ANTECEDENCIA = 30
 
 
@@ -453,6 +568,29 @@ def _parse_data(texto):
         return None
 
 
+def listar_aulas_do_dia(id_aluno, data_aula):
+    """Dev 3: aulas do aluno numa data, usadas pelas regras de treinos/agenda.py.
+
+    Se o banco estiver fora do ar devolve lista vazia: nesse caso a gravação do
+    agendamento também falha logo depois e o aluno recebe a mensagem de erro.
+    """
+    try:
+        conn = get_db_connection()
+    except Error:
+        return []
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT data_aula, horario, status FROM agendamento WHERE id_aluno = %s AND data_aula = %s",
+            (id_aluno, data_aula),
+        )
+        return cursor.fetchall()
+    except Error:
+        return []
+    finally:
+        conn.close()
+
+
 @app.get("/api/horarios")
 def api_horarios():
     data_aula = _parse_data(request.args.get("data", ""))
@@ -489,6 +627,13 @@ def api_agendar():
         return jsonify({"erro": "Horário indisponível. Atendemos das 06:00 às 21:00."}), 400
     if modalidade not in MODALIDADES:
         return jsonify({"erro": "Modalidade inválida."}), 400
+
+    # Dev 3: regras de treinos/agenda.py. Não deixa marcar horário que já passou ou que
+    # começa em menos de 1h, nem mais de 2 aulas no dia, nem duas aulas no mesmo horário.
+    try:
+        regras_agenda.validar_novo_agendamento(data_aula, horario, listar_aulas_do_dia(id_aluno, data_aula))
+    except regras_agenda.ErroAgenda as erro:
+        return jsonify({"erro": str(erro)}), 400
 
     try:
         if contar_ocupacao(data_aula).get(horario, 0) >= CAPACIDADE_POR_HORARIO:
@@ -569,8 +714,12 @@ def api_dashboard():
     try:
         cursor = conn.cursor(dictionary=True)
 
-        dia_semana_hoje = datetime.now().strftime("%A")
-        cursor.execute("SELECT * FROM treinos WHERE aluno_id = %s AND dia_semana = %s AND ativo = 1",
+        # Dev 3: o banco guarda o dia em português ("Segunda-feira"), mas strftime("%A")
+        # devolve o nome em inglês ("Monday"), então o "Treino de hoje" nunca era encontrado.
+        # Se houver mais de um treino no dia, mostra primeiro o do plano semanal mais novo.
+        dia_semana_hoje = plano_semanal.dia_do_banco(date.today())
+        cursor.execute("SELECT * FROM treinos WHERE aluno_id = %s AND dia_semana = %s AND ativo = 1 "
+                       "ORDER BY (semana_inicio IS NULL), id DESC LIMIT 1",
                        (aluno["id_aluno"], dia_semana_hoje))
         treino_hoje = cursor.fetchone()
         if treino_hoje:
@@ -638,7 +787,20 @@ def api_perfil_update():
     if "modalidade" in corpo and "modalidade_principal" not in corpo:
         corpo["modalidade_principal"] = corpo["modalidade"]
 
-    campos_permitidos = ['nome', 'email', 'telefone', 'objetivo', 'nivel', 'treinos_semana', 'modalidade_principal', 'notificacoes', 'acessibilidade', 'tema']
+    # Dev 3: data de nascimento (libera o modo +18 da Kiara). Vazio apaga a data.
+    if "data_nascimento" in corpo:
+        texto_nascimento = str(corpo.get("data_nascimento") or "").strip()
+        if texto_nascimento:
+            nascimento = _parse_data(texto_nascimento)
+            idade = personalidades.calcular_idade(nascimento) if nascimento else None
+            if idade is None or not 5 <= idade <= 120:
+                return jsonify({"ok": False, "erro": "Data de nascimento inválida."}), 400
+            corpo["data_nascimento"] = nascimento
+        else:
+            corpo["data_nascimento"] = None
+
+    campos_permitidos = ['nome', 'email', 'telefone', 'objetivo', 'nivel', 'treinos_semana', 'modalidade_principal', 'notificacoes', 'acessibilidade', 'tema',
+                         'data_nascimento']  # Dev 3: data_nascimento
     dados_para_update = {k: v for k, v in corpo.items() if k in campos_permitidos}
 
     if not dados_para_update:
@@ -658,6 +820,15 @@ def api_perfil_update():
         conn.close()
 
     aluno_atualizado = buscar_aluno_por_id(usuario["id_aluno"])
+
+    # Dev 3: se a nova data de nascimento tirar o acesso ao modo escolhido (+18),
+    # a Kiara volta para o modo padrão também no banco.
+    escolhido = aluno_atualizado.get("personalidade") or personalidades.PADRAO
+    idade_atual = personalidades.calcular_idade(aluno_atualizado.get("data_nascimento"))
+    if personalidades.resolver(escolhido, idade_atual) != escolhido:
+        salvar_personalidade(usuario["id_aluno"], personalidades.PADRAO)
+        aluno_atualizado["personalidade"] = personalidades.PADRAO
+
     session["usuario"] = formatar_aluno_publico(aluno_atualizado)
     return jsonify({"ok": True, "mensagem": "Perfil atualizado.", "aluno": session["usuario"]})
 
@@ -713,26 +884,48 @@ def api_treinos():
 @app.post("/api/treinos/gerar-kiara")
 @login_obrigatorio
 def api_gerar_treino_kiara():
+    """Dev 3: gera o plano semanal completo e salva em Meus treinos.
+
+    Antes esta rota pedia ao chat "Monte um treino" e salvava o que viesse: dava erro
+    (a linha do banco não tem os campos que o cálculo de risco usa) ou salvava um
+    treino vazio. Agora usa o gerador de treinos/: um treino por dia disponível, cada
+    um com aquecimento, treino principal e complementar, séries e descanso pelo objetivo.
+
+    Corpo JSON opcional (vem do formulário da tela Meus treinos):
+        {"dias_semana": ["seg", "qua", "sex"], "minutos_por_sessao": 60,
+         "local": "academia" ou "casa", "restricoes": ["joelho", "lombar", "ombro", "punho"]}
+    Sem corpo, valem objetivo, nível e treinos por semana do perfil do aluno.
+    O plano gerado antes por esta rota é desativado; treinos do chat e manuais ficam.
+    """
     usuario = session["usuario"]
-    aluno = buscar_aluno_por_id(usuario["id_aluno"])
-
-    resposta, modo, plano = responder_com_plano(aluno, [{"role": "user", "content": "Monte um treino"}], None)
-
-    conn = get_db_connection()
+    opcoes = request.get_json(silent=True) or {}
     try:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO treinos (aluno_id, titulo, dia_semana, origem) VALUES (%s, %s, %s, %s)",
-                       (aluno["id_aluno"], "Treino Kiara", "Segunda-feira", "kiara"))
-        treino_id = cursor.lastrowid
+        aluno = buscar_aluno_por_id(usuario["id_aluno"]) or usuario
+        plano = plano_semanal.gerar_para_aluno(aluno, opcoes)
+    except ErroPerfil as erro:
+        return jsonify({"ok": False, "erro": str(erro)}), 400
+    except Error:
+        return jsonify({"ok": False, "erro": "Erro ao acessar o banco de dados."}), 500
 
-        for i, ex in enumerate(plano.get("exercicios", [])):
-            cursor.execute("INSERT INTO treino_exercicios (treino_id, nome_exercicio, series, repeticoes, ordem) VALUES (%s, %s, %s, %s, %s)",
-                           (treino_id, ex.get("nome_pt"), ex.get("series"), ex.get("repeticoes"), i+1))
-        conn.commit()
-        return jsonify({"ok": True, "treino_id": treino_id, "mensagem": "Treino gerado pela Kiara e salvo!"})
-    finally:
-        cursor.close()
-        conn.close()
+    try:
+        conn = get_db_connection()
+        try:
+            ids = plano_semanal.salvar_plano(conn, usuario["id_aluno"], plano)
+        finally:
+            conn.close()
+    except Error:
+        return jsonify({"ok": False, "erro": "Erro ao salvar o plano de treino."}), 500
+
+    dias = [plano_semanal.DIAS_BANCO[d["dia"]] for d in plano["semana"] if d["sessao"]]
+    return jsonify({
+        "ok": True,
+        "treino_id": ids[0] if ids else None,
+        "treinos_ids": ids,
+        "divisao": plano["divisao"],
+        "dias": dias,
+        "observacoes": plano["observacoes"],
+        "mensagem": f"Plano semanal salvo: {len(ids)} treinos ({plano['divisao']}).",
+    })
 
 @app.post("/api/treinos/salvar-do-chat")
 @login_obrigatorio
@@ -1016,9 +1209,21 @@ def api_agendamento_inteligente():
 
         horario = grade["horario"]
 
-        cursor.execute("INSERT INTO agendamento (id_aluno, data_aula, horario, modalidade, status) VALUES (%s, %s, %s, %s, 'agendado')",
-                       (aluno["id_aluno"], amanha, horario, modalidade))
-        conn.commit()
+        # Dev 3: mesmas regras do agendamento normal (limite por dia e conflito de horário).
+        # Antes, clicar duas vezes gerava erro 500 por agendamento duplicado.
+        try:
+            regras_agenda.validar_novo_agendamento(amanha, horario, listar_aulas_do_dia(aluno["id_aluno"], amanha))
+        except regras_agenda.ErroAgenda as erro:
+            return jsonify({"ok": False, "erro": str(erro)}), 409
+
+        try:
+            cursor.execute("INSERT INTO agendamento (id_aluno, data_aula, horario, modalidade, status) VALUES (%s, %s, %s, %s, 'agendado')",
+                           (aluno["id_aluno"], amanha, horario, modalidade))
+            conn.commit()
+        except Error as erro:
+            if getattr(erro, "errno", None) == 1062:
+                return jsonify({"ok": False, "erro": "Você já tem aula agendada amanhã nesse horário."}), 409
+            raise
 
         return jsonify({
             "ok": True,
@@ -1040,12 +1245,22 @@ def api_cancelar_agendamento(agendamento_id):
     id_aluno = session["usuario"]["id_aluno"]
     conn = get_db_connection()
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        # Dev 3: antes de cancelar, confere se a aula ainda está ativa e se falta
+        # pelo menos 2h para começar (regra em treinos/agenda.py).
+        cursor.execute("SELECT data_aula, horario, status FROM agendamento WHERE id_agendamento = %s AND id_aluno = %s",
+                       (agendamento_id, id_aluno))
+        agendamento = cursor.fetchone()
+        if agendamento is None:
+            return jsonify({"ok": False, "erro": "Agendamento não encontrado."}), 404
+        try:
+            regras_agenda.validar_cancelamento(agendamento)
+        except regras_agenda.ErroAgenda as erro:
+            return jsonify({"ok": False, "erro": str(erro)}), 400
+
         cursor.execute("UPDATE agendamento SET status = 'cancelado' WHERE id_agendamento = %s AND id_aluno = %s",
                        (agendamento_id, id_aluno))
         conn.commit()
-        if cursor.rowcount == 0:
-            return jsonify({"ok": False, "erro": "Agendamento não encontrado."}), 404
         return jsonify({"ok": True, "mensagem": "Agendamento cancelado com sucesso."})
     finally:
         cursor.close()

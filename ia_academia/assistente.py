@@ -14,6 +14,7 @@ import pandas as pd
 import catalogo
 import biblioteca_exercicios
 import plano_kiara
+import personalidades  # Dev 3: modos de personalidade da Kiara escolhidos pelo aluno
 from nomes_exercicios_pt import nome_pt as traduzir_nome_exercicio
 
 logger = logging.getLogger(__name__)
@@ -258,9 +259,20 @@ def _instrucoes(aluno: dict, risco: float, historico: list | None = None) -> str
         "Não é necessário consultar exercícios específicos nesta pergunta."
         if tipo != "treino" else "Nenhum exercício específico encontrado na consulta atual.")
 
+    # Dev 3: personalidade escolhida pelo aluno. O servidor já conferiu a idade antes
+    # de colocar o modo em aluno["personalidade"]. No modo padrão o bloco fica vazio.
+    bloco_personalidade = personalidades.instrucoes_prompt(aluno.get("personalidade"))
+    # Dev 3: treinos salvos em Meus treinos (montado pelo treinos/plano_semanal.py),
+    # para a Kiara responder "qual é o meu treino de hoje?" com o treino real do aluno.
+    treinos_salvos = aluno.get("plano_semana") or "O aluno ainda não tem treinos salvos em Meus treinos."
+
     return f"""{PERSONA}
 {REGRAS}
 {_orientacao_formato(tipo)}
+{bloco_personalidade}
+
+TREINOS SALVOS DO ALUNO (tela Meus treinos):
+{treinos_salvos}
 
 CONTEXTO DO ALUNO (campos da tela podem estar desatualizados):
 - Nome: {aluno.get('nome') or 'Aluno'}
@@ -501,6 +513,15 @@ def responder_com_modo(aluno: dict, historico: list) -> tuple[str, str]:
     return responder_offline(aluno, historico, risco), "offline"
 
 
+def _pergunta_treino_salvo(mensagem: str) -> bool:
+    """Dev 3: o aluno quer ver o treino já salvo (de hoje ou da semana), não um treino novo."""
+    texto = biblioteca_exercicios.normalizar(mensagem)
+    return any(p in texto for p in (
+        "treino de hoje", "treino do dia", "treino hoje", "treinar hoje",
+        "meus treinos", "meu plano", "treino da semana",
+    ))
+
+
 def responder_com_plano(aluno: dict, historico: list, plano_atual: dict | None = None):
     """Gemini responde integralmente; catálogo só assume no modo offline.
 
@@ -515,13 +536,25 @@ def responder_com_plano(aluno: dict, historico: list, plano_atual: dict | None =
         # Nenhuma estrutura inventada do catálogo como se fosse o treino da IA.
         return texto, modo, {"exercicios": []}
 
+    # Dev 3: no modo offline a personalidade aparece numa frase de abertura e numa de
+    # fechamento (personalidades.estilizar_offline). Se a mensagem fala de dor, lesão,
+    # doença ou tristeza, a resposta sai sem estilo.
+    estilo = aluno.get("personalidade")
+    mensagem = _ultima(historico, "user")
+
+    # Dev 3: "qual é o meu treino de hoje?" no modo offline responde com os treinos
+    # salvos em Meus treinos (o servidor coloca esse texto em aluno["plano_semana"]).
+    if aluno.get("plano_semana") and _pergunta_treino_salvo(mensagem):
+        return (personalidades.estilizar_offline(aluno["plano_semana"], estilo, mensagem),
+                "offline", plano_atual or {"exercicios": []})
+
     # Sem Gemini, preserve o planejador determinístico e suas verificações.
     # A interface continua mostrando "Modo offline", sem fingir IA ativa.
     planejamento = plano_kiara.tratar(historico, plano_atual)
     if planejamento is not None:
         resposta, novo_plano = planejamento
-        return resposta, "offline", novo_plano
-    return texto, "offline", plano_atual or {"exercicios": []}
+        return personalidades.estilizar_offline(resposta, estilo, mensagem), "offline", novo_plano
+    return personalidades.estilizar_offline(texto, estilo, mensagem), "offline", plano_atual or {"exercicios": []}
 
 
 def responder(aluno: dict, historico: list):
