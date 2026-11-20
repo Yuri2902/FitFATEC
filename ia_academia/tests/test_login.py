@@ -9,7 +9,7 @@ class TestLogin(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
 
-    @patch("servidor.buscar_aluno_por_email")
+    @patch("servidor.buscar_aluno_por_identificador")
     def test_login_sucesso(self, mock_buscar):
         mock_buscar.return_value = {
             "id_aluno": 1,
@@ -30,7 +30,7 @@ class TestLogin(unittest.TestCase):
         self.assertEqual(data["usuario"]["email"], "joao@email.com")
         self.assertNotIn("senha_hash", data["usuario"])
 
-    @patch("servidor.buscar_aluno_por_email")
+    @patch("servidor.buscar_aluno_por_identificador")
     def test_login_email_inexistente(self, mock_buscar):
         mock_buscar.return_value = None
         resp = self.client.post("/login", json={
@@ -40,7 +40,7 @@ class TestLogin(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
         self.assertEqual(resp.get_json()["erro"], "Credenciais inválidas.")
 
-    @patch("servidor.buscar_aluno_por_email")
+    @patch("servidor.buscar_aluno_por_identificador")
     def test_login_senha_errada(self, mock_buscar):
         mock_buscar.return_value = {
             "id_aluno": 1,

@@ -9,7 +9,7 @@ class TestSession(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
 
-    @patch("servidor.buscar_aluno_por_email")
+    @patch("servidor.buscar_aluno_por_identificador")
     def test_login_cria_sessao(self, mock_buscar):
         mock_buscar.return_value = {
             "id_aluno": 1,
@@ -29,14 +29,15 @@ class TestSession(unittest.TestCase):
             self.assertIn("usuario", sess)
             self.assertEqual(sess["usuario"]["email"], "joao@email.com")
 
-    @patch("servidor.buscar_aluno_por_email")
+    @patch("servidor.buscar_aluno_por_identificador")
     def test_api_me_sem_sessao(self, mock_buscar):
         resp = self.client.get("/api/me")
         self.assertEqual(resp.status_code, 401)
         self.assertEqual(resp.get_json()["erro"], "Não autenticado.")
 
-    @patch("servidor.buscar_aluno_por_email")
-    def test_api_me_com_sessao(self, mock_buscar):
+    @patch("servidor.buscar_aluno_por_id")
+    @patch("servidor.buscar_aluno_por_identificador")
+    def test_api_me_com_sessao(self, mock_buscar, mock_buscar_id):
         mock_buscar.return_value = {
             "id_aluno": 1,
             "nome": "João Silva",
@@ -44,6 +45,7 @@ class TestSession(unittest.TestCase):
             "senha_hash": "hash_qualquer",
             "papel": "aluno",
         }
+        mock_buscar_id.return_value = mock_buscar.return_value
         with patch("servidor.verificar_senha", return_value=True):
             self.client.post("/login", json={
                 "email": "joao@email.com",
@@ -56,7 +58,16 @@ class TestSession(unittest.TestCase):
         self.assertEqual(data["usuario"]["email"], "joao@email.com")
         self.assertEqual(data["usuario"]["papel"], "aluno")
 
-    @patch("servidor.buscar_aluno_por_email")
+    @patch("servidor.buscar_aluno_por_id", return_value=None)
+    def test_sessao_de_usuario_excluido_e_encerrada(self, _):
+        with self.client.session_transaction() as sess:
+            sess["usuario"] = {"id_aluno": 5, "nome": "Conta excluída"}
+        resp = self.client.get("/api/me")
+        self.assertEqual(resp.status_code, 401)
+        with self.client.session_transaction() as sess:
+            self.assertNotIn("usuario", sess)
+
+    @patch("servidor.buscar_aluno_por_identificador")
     def test_logout_limpa_sessao(self, mock_buscar):
         mock_buscar.return_value = {
             "id_aluno": 1,

@@ -101,11 +101,10 @@ class TestDivisaoSemanal(unittest.TestCase):
         self.assertEqual(dias_musculacao, 4)
         self.assertIn("Recuperação ativa", [s["nome"] for s in plano["sessoes"]])
 
-    def test_sete_dias_deixa_o_domingo_livre(self):
-        plano = gerar_plano({"objetivo": "condicionamento", "nivel": "avancado", "dias_por_semana": 7})
-        semana = {d["dia"]: d["sessao"] for d in plano["semana"]}
-        self.assertIsNone(semana["dom"])
-        self.assertEqual(sum(1 for letra in semana.values() if letra), 6)
+    def test_sete_dias_incluem_recuperacao(self):
+        plano=gerar_plano({'objetivo':'saude','nivel':'intermediario','dias_por_semana':7})
+        self.assertEqual(len([d for d in plano['semana'] if d['sessao']]),7)
+        self.assertIn('Recuperação ativa',[s['nome'] for s in plano['sessoes']])
 
     def test_dias_escolhidos_sao_respeitados(self):
         plano = gerar_plano({"objetivo": "emagrecimento", "nivel": "intermediario", "dias_semana": ["ter", "qui", "sab"]})

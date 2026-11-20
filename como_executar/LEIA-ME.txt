@@ -1,4 +1,4 @@
-FITFATEC — INSTALAÇÃO E EXECUÇÃO (ATUALIZADO EM 13/11/2026)
+FITFATEC — INSTALAÇÃO E EXECUÇÃO (CALENDÁRIO PESSOAL — INSTALAÇÃO LIMPA)
 =======================================================
 
 IMPORTANTE: os comandos iniciais são executados na pasta FitFATEC, NÃO em ia_academia.
@@ -16,8 +16,9 @@ A) INSTALAÇÃO RÁPIDA NO WINDOWS
    Se quiser IA, adicione GEMINI_API_KEY=... (opcional); não exponha essa chave.
 4. No MySQL Workbench, se o banco ainda NÃO existe, abra bdd/bd_fitfatec.sql
    e execute UMA vez. Se o banco já existe, NÃO reaplique sem avaliar os dados.
-   O script contém CREATE TABLE sem IF NOT EXISTS e reimportar não é migração.
-   NUNCA descomente DROP DATABASE sem backup e intenção explícita de apagar dados.
+   O arquivo usa CREATE TABLE IF NOT EXISTS, o que NÃO corrige estruturas antigas.
+   Se tiver apenas dados de teste descartáveis, faça backup, apague o banco no
+   Workbench e execute o SQL oficial para criá-lo do zero.
 5. Execute: .\iniciar.ps1
 6. Abra: http://localhost:5000 (interface) e http://localhost:5000/conta (cadastro/login)
    GET http://localhost:5000/health serve como verificação simples do Flask.
@@ -58,7 +59,7 @@ C) DEPOIS DA INSTALAÇÃO
 -----------------------
 No Windows: .\iniciar.ps1, na raiz, e visite http://localhost:5000.
 Matrícula é gerada no cadastro e lida pela sessão de login; não deve ser digitada
-para agendar aulas. A página /teste-auth continua funcionando como alias antigo
+para programar treinos no calendário. A página /teste-auth continua funcionando como alias antigo
 de /conta para preservar favoritos.
 
 D) BIBLIOTECA / GEMINI (OPCIONAIS)
@@ -110,5 +111,14 @@ G) OBSERVAÇÕES
   'streamlit run app.py' a partir de ia_academia.
 - FLASK_DEBUG=1 apenas no desenvolvimento; nunca em produção.
 - Um servidor Flask local não é hospedagem de produção nem substitui segurança
-  de deploy. O banco MySQL e os agendamentos exigem testes de integração.
+  de deploy. O banco MySQL e o calendário exigem testes reais de integração.
 - Não versionar .env, API keys, credenciais nem arquivos locais de usuário.
+
+H) FLUXO DO CALENDÁRIO PESSOAL
+--------------------------------
+1. Crie a conta e salve um treino em Meus treinos.
+2. Abra Agendamentos; selecione data, ficha salva e horário opcional.
+3. O compromisso aparece no calendário e no painel inicial.
+4. Excluir agendamento NÃO apaga a ficha salva.
+5. Concluir agendamento registra execução e preserva a ficha.
+Não há vagas, aulas físicas, professores ou grade de horários.

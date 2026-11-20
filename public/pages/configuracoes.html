@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configurações — FitFATEC</title><link rel="stylesheet" href="/CSS.css"><link rel="stylesheet" href="/sidebar.css">
+<script src="/visual.js" defer></script><script src="/sidebar.js" defer></script>
+<style>
+.config-main{max-width:950px!important;margin-right:auto;display:block!important}
+.config-card{border:1px solid var(--borda);border-radius:12px;padding:20px;background:var(--bg-card);margin-bottom:16px;}
+.config-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);gap:16px;align-items:center;margin:16px 0}
+.config-row select{width:100%;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--borda-forte);border-radius:9px;padding:12px;font:inherit;min-width:0}
+.config-desc{font-size:.82rem;color:var(--text-secondary)}
+@media(max-width:660px){.config-row{grid-template-columns:1fr}}
+</style></head>
+<body class="fit-sidebar-layout" data-active-page="configuracoes">
+<aside id="fitSidebar" class="fit-sidebar" aria-label="Navegação principal"></aside>
+<button type="button" id="sidebarBackdrop" class="sidebar-backdrop" aria-label="Fechar menu lateral"></button>
+<main class="fit-container config-main"><h1 style="margin-bottom:6px">Configurações</h1><p class="config-desc" style="margin-bottom:20px">Personalize sua experiência no FitFATEC. Dados pessoais e de treino ficam em <a href="/pages/perfil.html">Meu perfil</a>.</p>
+<form id="formConfiguracoes">
+<section class="config-card"><h2 class="fit-card-title">Preferências</h2>
+<div class="config-row"><div><label for="configNotif"><strong>Notificações</strong></label><div class="config-desc">Lembretes de treinos e agendamentos</div></div><label><input type="checkbox" id="configNotif"> Ativar lembretes</label></div>
+<div class="config-row"><div><label for="configAcessibilidade"><strong>Acessibilidade</strong></label><div class="config-desc">Ajustes para leitura</div></div><select id="configAcessibilidade"><option value="padrao">Padrão (sem ajustes)</option><option value="fonte-grande">Texto ampliado</option></select></div>
+<div class="config-row"><div><label for="configPersonalidade"><strong>Personalidade da Kiara</strong></label><div id="configAjuda" class="config-desc">Como a Kiara conversa com você</div></div><select id="configPersonalidade"><option>Carregando...</option></select></div>
+<div class="config-row"><div><label for="configTema"><strong>Tema da interface</strong></label><div class="config-desc">Aparência do FitFATEC</div></div><select id="configTema"><option value="escuro">Escuro</option><option value="claro">Claro</option></select></div>
+</section>
+<button type="submit" class="fit-btn-primary" id="configSalvar">Salvar configurações</button>
+<p id="configEstado" role="status" class="config-desc"></p>
+</form></main>
+<script>
+window.addEventListener('DOMContentLoaded',async()=>{
+ const el=id=>document.getElementById(id),st=el('configEstado');
+ try{
+   const [perfil,resp]=await Promise.all([FitApp.api('/api/perfil'),FitApp.api('/api/personalidades')]);
+   const a=perfil.aluno||{};
+   el('configNotif').checked=Boolean(a.notificacoes);
+   el('configAcessibilidade').value=a.acessibilidade||'padrao';
+   el('configTema').value=a.tema||'escuro';
+   const select=el('configPersonalidade');select.replaceChildren();
+   for(const p of resp.personalidades||[]){let opt=new Option(p.nome+(p.liberada?'':' (bloqueada)'),p.id);opt.disabled=!p.liberada;select.add(opt);}
+   select.value=resp.atual||a.personalidade||'padrao';
+   const descr=()=>{const p=(resp.personalidades||[]).find(x=>x.id===select.value);el('configAjuda').textContent=p?.descricao||'Personalize as respostas da Kiara.';};descr();
+   select.addEventListener('change',descr);
+ }catch(e){st.textContent='Erro ao carregar configurações: '+e.message;}
+ el('configTema').addEventListener('change',e=>document.documentElement.setAttribute('data-theme',e.target.value));
+ el('configAcessibilidade').addEventListener('change',e=>document.documentElement.setAttribute('data-acessibilidade',e.target.value));
+ el('formConfiguracoes').addEventListener('submit',async e=>{
+   e.preventDefault();const botao=el('configSalvar');botao.disabled=true;
+   try{
+     await FitApp.api('/api/perfil',{method:'PUT',body:{notificacoes:el('configNotif').checked?1:0,acessibilidade:el('configAcessibilidade').value,tema:el('configTema').value}});
+     await FitApp.api('/api/perfil/personalidade',{method:'PUT',body:{personalidade:el('configPersonalidade').value}});
+     await FitApp.sessao.init();st.textContent='Configurações salvas.';FitApp.ui.toast('Configurações salvas','sucesso');
+   }catch(error){st.textContent='Falha ao salvar: '+error.message;FitApp.ui.toast(error.message,'erro');}
+   finally{botao.disabled=false;}
+ });
+});
+</script></body></html>

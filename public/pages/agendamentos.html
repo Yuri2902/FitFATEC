@@ -1,476 +1,310 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Agendamentos — FitFATEC</title>
-  <link rel="stylesheet" href="../CSS.css">
-  <script src="../visual.js" defer></script>
-  <style>
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      text-align: center;
-      margin-top: 10px;
-    }
-
-    .cal-head {
-      font-size: 0.74rem;
-      color: var(--text-secondary);
-      font-weight: 600;
-      padding: 4px 0;
-    }
-
-    .cal-day {
-      padding: 7px 0;
-      border-radius: 8px;
-      font-size: 0.84rem;
-      color: var(--text-primary);
-      cursor: pointer;
-      position: relative;
-    }
-
-    .cal-day.muted {
-      color: var(--text-muted);
-    }
-
-    .cal-day.ativo {
-      background: linear-gradient(135deg, #FF7E29 0%, #F2580C 100%);
-      color: #FFFFFF;
-      font-weight: 700;
-    }
-
-    .cal-day.com-aula::after {
-      content: "";
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background-color: var(--accent-primary);
-      position: absolute;
-      bottom: 3px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meu calendário — FitFATEC</title>
+<link rel="stylesheet" href="../CSS.css">
+<script src="../visual.js" defer></script>
+<style>
+  .agenda-layout {display:grid;grid-template-columns:minmax(255px,310px) minmax(350px,1fr) minmax(260px,350px);gap:18px;align-items:start}
+  .agenda-field {display:grid;gap:6px;margin:16px 0}
+  .agenda-field label {color:var(--text-secondary);font-size:.86rem}
+  .agenda-field input, .agenda-field select, .agenda-field textarea {width:100%;padding:12px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--borda-forte);border-radius:10px;font:inherit}
+  .agenda-field input:focus-visible, .agenda-field select:focus-visible, .cal-day:focus-visible {outline:2px solid var(--accent-primary);outline-offset:2px}
+  .cal-grid {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px;text-align:center}
+  .cal-head {color:var(--text-secondary);font-size:.78rem;padding:7px 0}
+  .cal-day {position:relative;min-height:53px;padding:5px 3px;border-radius:9px;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--borda);cursor:pointer;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:3px}
+  .cal-day.com-treino {border-color:var(--borda-forte);box-shadow:inset 0 0 0 1px var(--borda-forte)}
+  .cal-markers {width:100%;min-height:16px;display:flex;gap:2px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .cal-marker {min-width:16px;max-width:100%;height:16px;padding:0 3px;border-radius:4px;font-size:10px;line-height:16px;font-weight:700;text-align:center;white-space:nowrap}
+  .cal-marker-extra {font-size:10px;color:var(--text-secondary)}
+  .cal-day:disabled {opacity:.4;cursor:default}
+  .cal-day.ativo {background:var(--accent-primary);color:white}
+  .agenda-top {display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .agenda-nav {display:flex;align-items:center;gap:8px}
+  .agenda-nav button {background:var(--bg-input);color:var(--text-primary);border:1px solid var(--borda-forte);padding:7px 13px;border-radius:8px;cursor:pointer}
+  .agenda-item {display:flex;gap:12px;align-items:start;justify-content:space-between;padding:13px 12px;background:var(--bg-input);border:1px solid var(--borda);border-left:5px solid var(--cor-treino,var(--borda));border-radius:10px}
+  .semana-nav {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px}
+  .semana-nav button {background:var(--bg-input);color:var(--text-primary);border:1px solid var(--borda-forte);border-radius:8px;padding:6px 10px;cursor:pointer}
+  .semana-nav span {font-size:.8rem;font-weight:600;text-align:center}
+  .agenda-item strong {color:var(--text-primary)}
+  .agenda-item p {font-size:.8rem;color:var(--text-secondary);margin:4px 0 0}
+  .agenda-actions {display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .agenda-actions button {font:inherit;font-size:.75rem;padding:7px;border-radius:7px;border:1px solid var(--borda-forte);background:var(--bg-card);color:var(--text-primary);cursor:pointer}
+  .agenda-actions button.danger {color:#e67b70}
+  .agenda-list {display:flex;flex-direction:column;gap:8px;margin-top:15px}
+  .ag-dias-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:12px}
+  .ag-dias-grid label{display:flex;gap:4px;align-items:center;justify-content:center;padding:8px 3px;background:var(--bg-input);border:1px solid var(--borda-forte);border-radius:8px;font-size:.78rem;cursor:pointer}
+  .ag-dias-grid label:has(input:checked){border-color:var(--accent-primary);color:var(--accent-primary)}
+  .agenda-empty {color:var(--text-secondary);padding:15px;border:1px dashed var(--borda-forte);border-radius:9px;font-size:.87rem}
+  @media (max-width:1050px) {.agenda-layout{grid-template-columns:1fr 1fr}.agenda-layout>section:last-child{grid-column:1/-1}}
+  @media (max-width:680px) {.agenda-layout{grid-template-columns:1fr}.agenda-layout>section:last-child{grid-column:auto}}
+</style>
+  <link rel="stylesheet" href="/sidebar.css">
+  <script src="/sidebar.js" defer></script>
 </head>
+<body class="fit-sidebar-layout" data-active-page="agendamentos">
+<aside id="fitSidebar" class="fit-sidebar" aria-label="Navegação principal"></aside>
+<button type="button" id="sidebarBackdrop" class="sidebar-backdrop" tabindex="-1" aria-label="Fechar menu lateral"></button>
 
-<body>
 
-  <header class="fit-navbar">
-    <div class="fit-nav-left">
-      <a href="/index.html" class="fit-brand">
-        <img src="../img/kiara-logo.png" alt="Kiara">
-        <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
-      </a>
-      <div class="fit-divider-v"></div>
-      <nav class="fit-nav-links">
-        <a href="/index.html" class="fit-nav-link">Início</a>
-        <a href="/pages/perfil.html" class="fit-nav-link">Meu perfil</a>
-        <a href="/pages/treinos.html" class="fit-nav-link">Meus treinos</a>
-        <a href="/pages/agendamentos.html" class="fit-nav-link ativo">Agendamentos</a>
-      </nav>
-    </div>
-    <div class="fit-nav-right">
-      <div class="fit-divider-v"></div>
-      <a id="navAuthBtn" href="/pages/conta.html" class="fit-btn-auth"><span>Entrar</span></a>
-    </div>
-  </header>
-
-  <main class="fit-container fit-grid-3col">
-    <!-- COLUNA ESQUERDA -->
-    <section class="fit-col-stack">
-      <div class="fit-card" id="cardDadosAluno">
-        <h2 class="fit-card-title" style="margin-bottom:14px;">Dados do aluno</h2>
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-          <img id="alunoAvatarCard" src="../img/kiara-logo.png" alt="Avatar" width="52" height="52"
-            style="border-radius:50%; object-fit:cover; border:2px solid var(--accent-primary);">
-          <div>
-            <strong id="alunoNomeCard" style="display:block; font-size:1rem;">Carregando...</strong>
-            <span id="alunoMatriculaCard"
-              style="display:block; font-size:0.8rem; color:var(--text-secondary); margin:2px 0 5px;">Matrícula:
-              --</span>
-            <span class="fit-status-pill" style="padding:2px 9px; font-size:0.72rem;"><span
-                class="fit-dot-online"></span> Ativo</span>
-          </div>
-        </div>
-
-        <div class="fit-info-row">
-          <span class="fit-info-icon" style="margin-top:4px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="6" />
-              <circle cx="12" cy="12" r="2" />
-            </svg>
-          </span>
-          <div>
-            <span class="fit-label">Objetivo</span>
-            <strong id="alunoObjetivoCard" style="font-size:0.9rem;">--</strong>
-          </div>
-        </div>
-        <div class="fit-info-row">
-          <span class="fit-info-icon" style="margin-top:4px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
-          </span>
-          <div>
-            <span class="fit-label">Nível</span>
-            <strong id="alunoNivelCard" style="font-size:0.9rem;">--</strong>
-          </div>
+<main class="fit-container agenda-layout" style="margin-top:24px;">
+  <section class="fit-card" aria-labelledby="agTitle">
+    <h1 id="agTitle" class="fit-card-title">Programar treino</h1>
+    <p style="color:var(--text-secondary);font-size:.85rem;line-height:1.55;margin-top:10px">Escolha um dia no calendário e um treino que você já salvou em <a href="/pages/treinos.html" style="color:var(--accent-primary)">Meus treinos</a>.</p>
+    <form id="formAgenda">
+      <div class="agenda-field"><label for="agData">Data *</label><input type="date" id="agData" required></div>
+      <div class="agenda-field"><label for="agTreino">Treino salvo *</label><select id="agTreino" required><option value="">Carregando...</option></select></div>
+      <label style="display:flex;align-items:center;gap:8px;margin:12px 0;color:var(--text-primary);font-size:.86rem;">
+        <input type="checkbox" id="agRepetir"> Repetir semanalmente
+      </label>
+      <div id="agDiasWrap" hidden>
+        <p style="font-size:.82rem;color:var(--text-secondary);margin:8px 0">Escolha os dias da semana para repetir:</p>
+        <div class="ag-dias-grid" id="agDias" aria-label="Dias da repetição">
+          <label><input type="checkbox" value="0"> Seg</label>
+          <label><input type="checkbox" value="1"> Ter</label>
+          <label><input type="checkbox" value="2"> Qua</label>
+          <label><input type="checkbox" value="3"> Qui</label>
+          <label><input type="checkbox" value="4"> Sex</label>
+          <label><input type="checkbox" value="5"> Sáb</label>
+          <label><input type="checkbox" value="6"> Dom</label>
         </div>
       </div>
+      <button type="submit" id="agSalvar" class="fit-btn-primary" style="width:100%">Adicionar ao calendário</button>
+    </form>
+    <p id="agAviso" role="status" style="color:var(--text-secondary);font-size:.81rem"></p>
+    <details id="programarPlano" style="margin-top:18px;padding:12px;border:1px solid var(--borda-forte);border-radius:12px;">
+      <summary style="cursor:pointer;font-weight:600">Programar plano semanal inteiro</summary>
+      <p style="color:var(--text-secondary);font-size:.8rem;margin:8px 0;">Agende todas as fichas nos dias definidos pelo plano. Pode cancelar só uma ocorrência depois.</p>
+      <div class="agenda-field"><label for="agPlano">Plano salvo</label><select id="agPlano"><option value="">Selecione...</option></select></div>
+      <button type="button" id="agPlanoSalvar" class="fit-btn-outline-orange" style="width:100%">Repetir plano semanalmente</button>
+    </details>
+  </section>
+  <section class="fit-card" aria-labelledby="calTitulo">
+    <div class="agenda-top"><h2 id="calTitulo" class="fit-card-title">Meu calendário</h2><div class="agenda-nav"><button type="button" id="mesAnterior" aria-label="Mês anterior">‹</button><button type="button" id="mesProximo" aria-label="Próximo mês">›</button></div></div>
+    <p style="font-size:.82rem;color:var(--text-secondary);margin:10px 0 0">Clique em um dia para programar um treino. Os marcadores mostram a cor do plano ou da ficha individual. Clique em um dia para ver a semana.</p>
+    <div id="gradeCalendario" class="cal-grid" aria-label="Calendário de treinos"></div>
+  </section>
+  <section class="fit-card" id="minhaAgenda" aria-labelledby="agListaTitulo">
+    <h2 id="agListaTitulo" class="fit-card-title">Meus agendamentos</h2>
+    <p style="font-size:.8rem;color:var(--text-secondary)">Exibindo apenas a semana selecionada. Excluir um compromisso não apaga o treino salvo.</p>
+    <div class="semana-nav"><button id="semanaAnterior" type="button" aria-label="Semana anterior">‹</button><span id="semanaPeriodo"></span><button id="semanaProxima" type="button" aria-label="Próxima semana">›</button></div>
+    <div class="agenda-list" id="agListaItens" aria-live="polite"><div class="agenda-empty">Carregando agendamentos...</div></div>
+  </section>
+</main>
+<script>
+(() => {
+  const mesNomes = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const diasNomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const hoje = new Date();
+  const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const dataHoje = isoLocal(hoje);
+  let ano = hoje.getFullYear(), mes = hoje.getMonth();
+  let agendamentos = [];
+  const segundaDe = data => { const d=new Date(data.getFullYear(),data.getMonth(),data.getDate());d.setDate(d.getDate()-(d.getDay()+6)%7);return d; };
+  let semanaInicio = segundaDe(hoje);
+  const dataSemHora = iso => {const [y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d);};
+  const corSegura = cor => /^#[0-9a-fA-F]{6}$/.test(cor||'')?cor:'#F97316';
+  const textoEmCor = cor => {const c=corSegura(cor);const [r,g,b]=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));return (r*.299+g*.587+b*.114)>155?'#181818':'#ffffff';};
+  const letraTreino = a => {
+    if (!a.plano_id)return '•';
+    const nome=a.treino_titulo||'';
+    const letra=nome.match(/(?:^|\s)treino\s*([A-G])(?:\b|\s|\s*[—–-])/i);
+    return letra?letra[1].toUpperCase():'•';
+  };
+  const el = id => document.getElementById(id);
+  const dataPt = data => {const p=data.split('-');return `${p[2]}/${p[1]}/${p[0]}`;};
+  const elemento = (tag, texto, classe) => {const e=document.createElement(tag); if(texto!==undefined)e.textContent=texto;if(classe)e.className=classe;return e;};
 
-      <div class="fit-card">
-        <h3 class="fit-card-title" style="margin-bottom:14px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-          Acesso rápido
-        </h3>
-        <div class="fit-col-stack" style="gap:10px;">
-          <a href="#listaProximos" class="fit-subcard">
-            <span style="display:inline-flex; align-items:center; gap:9px;">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              Ver meus agendamentos
-            </span>
-            <span>›</span>
-          </a>
-          <a href="/index.html" class="fit-subcard">
-            <span style="display:inline-flex; align-items:center; gap:9px;">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
-              </svg>
-              Gerar treino
-            </span>
-            <span>›</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- COLUNA CENTRO: AGENDAR AULA -->
-    <section class="fit-card">
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" />
-          <line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-        <div>
-          <h1 style="margin:0; font-size:1.35rem;">Agendamentos</h1>
-          <p style="margin:2px 0 0; font-size:0.84rem; color:var(--text-secondary);">Agende suas aulas de forma rápida e
-            automática.</p>
-        </div>
-      </div>
-
-      <div
-        style="border:1px solid var(--borda); border-radius:12px; padding:16px; margin-bottom:16px; background:rgba(16,17,21,0.45);">
-        <div class="fit-card-header" style="margin-bottom:12px;">
-          <h2 class="fit-card-title" style="font-size:1rem;">Agendar aula</h2>
-        </div>
-
-        <div class="fit-subcard" style="margin-bottom:14px; font-size:0.84rem;">
-          <span>Seus dados já estão reconhecidos! Basta escolher a aula, a data e o horário.</span>
-        </div>
-
-        <form id="formAgendar" onsubmit="agendarAula(event)">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div>
-              <label class="fit-label" for="agData">Data da aula *</label>
-              <input type="date" id="agData" required>
-            </div>
-            <div>
-              <label class="fit-label" for="agModalidade">Modalidade *</label>
-              <select id="agModalidade">
-                <option value="Musculação">Musculação</option>
-                <option value="Funcional">Funcional</option>
-                <option value="Cardio">Cardio</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr auto; gap:12px; align-items:end; margin-bottom:12px;">
-            <div>
-              <label class="fit-label" for="agHorario">Horário *</label>
-              <select id="agHorario">
-                <option value="18h00 – 19h00">18h00 – 19h00</option>
-                <option value="19h00 – 20h00">19h00 – 20h00</option>
-                <option value="08h00 – 09h00">08h00 – 09h00</option>
-                <option value="10h00 – 11h00">10h00 – 11h00</option>
-              </select>
-            </div>
-            <span class="fit-status-pill" style="margin-bottom:4px;"><span class="fit-dot-online"></span> Vagas
-              disponíveis</span>
-          </div>
-
-          <div style="margin-bottom:16px;">
-            <label class="fit-label" for="agObs">Observações (opcional)</label>
-            <textarea id="agObs" rows="2" maxlength="200"
-              placeholder="Ex.: foco em membros superiores, adaptação, etc."></textarea>
-          </div>
-
-          <div style="display:grid; grid-template-columns:1fr 1.4fr; gap:12px;">
-            <button type="reset" class="fit-btn-dark">Cancelar</button>
-            <button type="submit" class="fit-btn-primary">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              Agendar aula
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="fit-card-highlight" style="display:flex; align-items:center; gap:14px;">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2"
-          style="flex-shrink:0;">
-          <circle cx="12" cy="12" r="9" />
-          <circle cx="12" cy="12" r="5" />
-          <circle cx="12" cy="12" r="1.5" fill="#FF6B1A" />
-        </svg>
-        <div>
-          <strong style="display:block; font-size:0.95rem; margin-bottom:3px;">Agendamento automático</strong>
-          <span style="font-size:0.82rem; color:var(--text-secondary);">O sistema verifica a disponibilidade, registra
-            sua aula e já atualiza sua agenda, tudo de forma automática.</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- COLUNA DIREITA: CALENDÁRIO + PRÓXIMOS -->
-    <section class="fit-col-stack">
-      <div class="fit-card">
-        <div class="fit-card-header" style="margin-bottom:6px;">
-          <h3 class="fit-card-title">Minha agenda</h3>
-          <span style="font-size:0.82rem; color:var(--text-secondary);">‹ Março ›</span>
-        </div>
-        <div class="cal-grid">
-          <div class="cal-head">Dom</div>
-          <div class="cal-head">Seg</div>
-          <div class="cal-head">Ter</div>
-          <div class="cal-head">Qua</div>
-          <div class="cal-head">Qui</div>
-          <div class="cal-head">Sex</div>
-          <div class="cal-head">Sáb</div>
-          <div class="cal-day muted">23</div>
-          <div class="cal-day muted">24</div>
-          <div class="cal-day muted">25</div>
-          <div class="cal-day muted">26</div>
-          <div class="cal-day muted">27</div>
-          <div class="cal-day muted">28</div>
-          <div class="cal-day">1</div>
-          <div class="cal-day">2</div>
-          <div class="cal-day">3</div>
-          <div class="cal-day">4</div>
-          <div class="cal-day">5</div>
-          <div class="cal-day">6</div>
-          <div class="cal-day">7</div>
-          <div class="cal-day">8</div>
-          <div class="cal-day">9</div>
-          <div class="cal-day com-aula">10</div>
-          <div class="cal-day">11</div>
-          <div class="cal-day ativo">12</div>
-          <div class="cal-day">13</div>
-          <div class="cal-day com-aula">14</div>
-          <div class="cal-day">15</div>
-          <div class="cal-day">16</div>
-          <div class="cal-day com-aula">17</div>
-          <div class="cal-day">18</div>
-          <div class="cal-day">19</div>
-          <div class="cal-day">20</div>
-          <div class="cal-day">21</div>
-          <div class="cal-day">22</div>
-          <div class="cal-day">23</div>
-          <div class="cal-day">24</div>
-          <div class="cal-day">25</div>
-          <div class="cal-day">26</div>
-          <div class="cal-day">27</div>
-          <div class="cal-day">28</div>
-          <div class="cal-day">29</div>
-        </div>
-      </div>
-
-      <div class="fit-card" id="listaProximos">
-        <div class="fit-card-header">
-          <h3 class="fit-card-title">Próximos agendamentos</h3>
-          <span class="fit-link-more">Ver agenda completa ›</span>
-        </div>
-        <div id="agListaItens" class="fit-col-stack" style="gap:9px;">
-          <div class="fit-subcard">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div class="fit-date-badge"><span class="dia-sem">QUA</span><span class="dia-num">12</span></div>
-              <div>
-                <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
-                <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
-              </div>
-            </div>
-            <span>›</span>
-          </div>
-          <div class="fit-subcard">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div class="fit-date-badge"><span class="dia-sem">SEX</span><span class="dia-num">14</span></div>
-              <div>
-                <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
-                <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
-              </div>
-            </div>
-            <span>›</span>
-          </div>
-          <div class="fit-subcard">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div class="fit-date-badge"><span class="dia-sem">SEG</span><span class="dia-num">17</span></div>
-              <div>
-                <div style="font-weight:700; font-size:0.9rem;">Funcional</div>
-                <div style="font-size:0.8rem; color:var(--text-secondary);">19h00 – 20h00</div>
-              </div>
-            </div>
-            <span>›</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    const DIAS_SEMANA_CURTO = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
-
-    function formatarDiaSemana(dataStr) {
-      const partes = (dataStr || '').split('-');
-      if (partes.length !== 3) return { sem: 'AULA', dia: '--' };
-      const dt = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
-      return {
-        sem: DIAS_SEMANA_CURTO[dt.getDay()] || 'AULA',
-        dia: partes[2]
-      };
-    }
-
-    async function carregarDadosAgendamentos() {
-      try {
-        const resPerfil = await FitApp.api('/api/perfil');
-        const aluno = resPerfil.aluno;
-        if (aluno) {
-          document.getElementById('alunoNomeCard').textContent = aluno.nome || 'Aluno';
-          document.getElementById('alunoMatriculaCard').textContent = `Matrícula: ${aluno.matricula || '20260001'}`;
-          document.getElementById('alunoObjetivoCard').textContent = aluno.objetivo || 'Não definido';
-          document.getElementById('alunoNivelCard').textContent = aluno.nivel || 'Iniciante';
-          if (aluno.avatar_url) {
-            document.getElementById('alunoAvatarCard').src = aluno.avatar_url;
-          }
-        }
-      } catch (_) { }
-
-      try {
-        const res = await FitApp.api('/api/agendamentos');
-        const lista = res.proximos_agendamentos || [];
-        const container = document.getElementById('agListaItens');
-        if (!container) return;
-
-        if (lista.length === 0) {
-          container.innerHTML = `<div class="fit-subcard" style="justify-content:center; color:var(--text-secondary); font-size:0.85rem;">Nenhuma aula futura agendada.</div>`;
-          return;
-        }
-
-        container.innerHTML = lista.map((ag) => {
-          const { sem, dia } = formatarDiaSemana(ag.data_aula);
-          const mod = (ag.modalidade || 'Musculação');
-          const modCap = mod.charAt(0).toUpperCase() + mod.slice(1);
-          return `
-          <div class="fit-subcard" style="cursor:pointer;" title="Clique para cancelar este agendamento" onclick="cancelarAgendamento(${ag.id_agendamento}, '${modCap}', '${ag.data_aula}')">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div class="fit-date-badge"><span class="dia-sem">${sem}</span><span class="dia-num">${dia}</span></div>
-              <div>
-                <div style="font-weight:700; font-size:0.9rem;">${modCap}</div>
-                <div style="font-size:0.8rem; color:var(--text-secondary);">${ag.horario}</div>
-              </div>
-            </div>
-            <span style="color:#EF4444; font-size:0.8rem;">Cancelar</span>
-          </div>
-        `;
-        }).join('');
-      } catch (_) { }
-    }
-
-    async function cancelarAgendamento(id, modalidade, dataAula) {
-      if (!confirm(`Deseja cancelar a aula de ${modalidade} em ${dataAula}?`)) return;
-      try {
-        await FitApp.api(`/api/agendamentos/${id}`, { method: 'DELETE' });
-        FitApp.ui.toast('Agendamento cancelado.', 'sucesso');
-        await carregarDadosAgendamentos();
-      } catch (err) {
-        FitApp.ui.toast(err.message || 'Erro ao cancelar.', 'erro');
-      }
-    }
-
-    async function agendarAula(e) {
-      e.preventDefault();
-      const data = document.getElementById('agData').value;
-      const modalidade = document.getElementById('agModalidade').value;
-      const horario = document.getElementById('agHorario').value;
-      const observacoes = document.getElementById('agObs').value;
-
-      const sucesso = await FitApp.agendamento.agendarAula(data, modalidade, horario, observacoes);
-      if (sucesso) {
-        document.getElementById('agObs').value = '';
-        await carregarDadosAgendamentos();
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const inputData = document.getElementById('agData');
-      if (inputData) {
-        const hoje = new Date().toISOString().split('T')[0];
-        inputData.min = hoje;
-        if (!inputData.value) inputData.value = hoje;
-      }
-
-      // Torna os dias do calendário clicáveis para preencher a data no formulário
-      document.querySelectorAll('.cal-day:not(.muted)').forEach((el) => {
-        el.addEventListener('click', () => {
-          document.querySelectorAll('.cal-day.ativo').forEach((d) => d.classList.remove('ativo'));
-          el.classList.add('ativo');
-          const diaNum = el.textContent.trim().padStart(2, '0');
-          const base = (inputData && inputData.value ? inputData.value : new Date().toISOString().split('T')[0]).slice(0, 8);
-          if (inputData) inputData.value = `${base}${diaNum}`;
-        });
+  function renderCalendario() {
+    el('calTitulo').textContent = `Meu calendário — ${mesNomes[mes]} de ${ano}`;
+    const grade=el('gradeCalendario');grade.replaceChildren();
+    diasNomes.forEach(n=>grade.append(elemento('span',n,'cal-head')));
+    const inicio=new Date(ano,mes,1).getDay(),qtd=new Date(ano,mes+1,0).getDate();
+    for(let i=0;i<inicio;i++)grade.append(elemento('span','','cal-head'));
+    for(let d=1;d<=qtd;d++){
+      const data=isoLocal(new Date(ano,mes,d));
+      const eventos=agendamentos.filter(a=>a.data_treino===data);
+      const btn=elemento('button',undefined,'cal-day');btn.type='button';
+      btn.append(elemento('span',String(d)));
+      const nomes=eventos.map(a=>a.treino_titulo||'Treino').join(', ');
+      btn.setAttribute('aria-label',`${dataPt(data)}${nomes?' — '+nomes:''}`);
+      btn.title=nomes||dataPt(data);
+      if(eventos.length)btn.classList.add('com-treino');
+      if(el('agData').value===data)btn.classList.add('ativo');
+      const markers=elemento('span',undefined,'cal-markers');
+      eventos.slice(0,3).forEach(a=>{
+        const marker=elemento('span',letraTreino(a),'cal-marker');
+        const cor=corSegura(a.cor_hex);marker.style.backgroundColor=cor;
+        marker.style.color=textoEmCor(cor);marker.title=a.treino_titulo||'Treino';
+        markers.append(marker);
       });
+      if(eventos.length>3)markers.append(elemento('span',`+${eventos.length-3}`,'cal-marker-extra'));
+      btn.append(markers);
+      btn.addEventListener('click',()=>{
+        el('agData').value=data;
+        semanaInicio=segundaDe(dataSemHora(data));
+        renderCalendario();renderLista();
+      });
+      grade.append(btn);
+    }
+  }
 
-      // Ativa o badge "Agendamento inteligente"
-      const badgeInteligente = document.querySelector('.fit-badge-kiara');
-      if (badgeInteligente) {
-        badgeInteligente.style.cursor = 'pointer';
-        badgeInteligente.title = 'Agendar automaticamente para amanhã';
-        badgeInteligente.addEventListener('click', async () => {
+  function renderLista() {
+    const lista=el('agListaItens');lista.replaceChildren();
+    const semanaFim=new Date(semanaInicio);semanaFim.setDate(semanaFim.getDate()+6);
+    const inicio=isoLocal(semanaInicio),fim=isoLocal(semanaFim);
+    el('semanaPeriodo').textContent=`${dataPt(inicio)} – ${dataPt(fim)}`;
+    const destaSemana=agendamentos.filter(a=>a.data_treino>=inicio&&a.data_treino<=fim);
+    if (!destaSemana.length) {lista.append(elemento('div','Nenhum treino programado nesta semana.','agenda-empty'));return;}
+    destaSemana.forEach(a=>{
+      const caixa=elemento('article',undefined,'agenda-item');
+      caixa.style.setProperty('--cor-treino',corSegura(a.cor_hex));
+      const info=elemento('div');info.append(elemento('strong',a.treino_titulo || 'Treino salvo'));
+      const s=(a.status==='concluido'?'Concluído':'Planejado');
+      info.append(elemento('p',`${dataPt(a.data_treino)}${a.horario?' • '+a.horario:''} • ${s}`));
+      if(a.observacoes) info.append(elemento('p',a.observacoes));
+      const acoes=elemento('div',undefined,'agenda-actions');
+      if(a.status==='planejado' && a.data_treino<=dataHoje) {
+        const concluir=elemento('button','Concluir');concluir.type='button';
+        concluir.addEventListener('click',async()=>{
           try {
-            const res = await FitApp.api('/api/agendamentos/inteligente', { method: 'POST' });
-            FitApp.ui.toast(res.mensagem || 'Agendamento inteligente realizado!', 'sucesso');
-            await carregarDadosAgendamentos();
-          } catch (err) {
-            FitApp.ui.toast(err.message || 'Não foi possível agendar automaticamente.', 'erro');
-          }
-        });
+            const url=a.recorrente
+              ? `/api/agendamentos/recorrencias/${a.recorrencia_id}/ocorrencias/${a.data_treino}`
+              : `/api/agendamentos/${a.id_agendamento}`;
+            await FitApp.api(url,{method:'PATCH',body:{status:'concluido'}});
+            FitApp.ui.toast('Treino concluído!','sucesso');await carregar();}
+          catch(e){FitApp.ui.toast(e.message,'erro');}
+        });acoes.append(concluir);
       }
-
-      carregarDadosAgendamentos();
+      const excluir=elemento('button','Excluir','danger');excluir.type='button';
+      excluir.addEventListener('click',async()=>{
+        if(!confirm(`Excluir apenas o agendamento de ${a.treino_titulo} em ${dataPt(a.data_treino)}?`))return;
+        try {
+          const url=a.recorrente
+            ? `/api/agendamentos/recorrencias/${a.recorrencia_id}/ocorrencias/${a.data_treino}`
+            : `/api/agendamentos/${a.id_agendamento}`;
+          await FitApp.api(url,{method:'DELETE'});
+          FitApp.ui.toast('Ocorrência removida; treino preservado.','sucesso');await carregar();}
+        catch(e){FitApp.ui.toast(e.message,'erro');}
+      });acoes.append(excluir);
+      if(a.recorrente){
+        const serie=elemento('button','Parar repetição');serie.type='button';
+        serie.addEventListener('click',async()=>{
+          if(!confirm(`Interromper toda a repetição semanal de ${a.treino_titulo}? A ficha não será apagada.`))return;
+          try{await FitApp.api(`/api/agendamentos/recorrencias/${a.recorrencia_id}`,{method:'DELETE'});
+            FitApp.ui.toast('Repetição interrompida.','sucesso');await carregar();}
+          catch(e){FitApp.ui.toast(e.message,'erro');}
+        });acoes.append(serie);
+      }
+      caixa.append(info,acoes);lista.append(caixa);
     });
-  </script>
-</body>
+  }
+  async function carregar() {
+    try {
+      // Busca a janela do mês visualizado e inclui semanas nas bordas.
+      const primeiro=isoLocal(new Date(ano,mes,-6));
+      const ultimo=isoLocal(new Date(ano,mes+2,0));
+      const [res,treinos,planos]=await Promise.all([
+        FitApp.api(`/api/agendamentos?inicio=${primeiro}&fim=${ultimo}`),
+        FitApp.api('/api/treinos'),FitApp.api('/api/planos')]);
+      agendamentos=res.agendamentos || [];
+      const selecaoPlano=el('agPlano');const planoAnterior=selecaoPlano.value;
+      selecaoPlano.replaceChildren(new Option('Selecione um plano salvo',''));
+      (planos.planos||[]).forEach(p=>selecaoPlano.add(new Option(`${p.titulo} • ${p.dias_semana} dias`,String(p.id))));
+      if([...selecaoPlano.options].some(o=>o.value===planoAnterior))selecaoPlano.value=planoAnterior;
+      const daUrl=new URLSearchParams(window.location.search).get('plano');
+      if(daUrl && [...selecaoPlano.options].some(o=>o.value===daUrl))selecaoPlano.value=daUrl;
+      el('agPlanoSalvar').disabled=!(planos.planos||[]).length;
+      const opt=el('agTreino');const anterior=opt.value;opt.replaceChildren();
+      opt.append(new Option('Selecione uma ficha salva',''));
+      const fichas=treinos.treinos||[];
+      const ordemPt=(a,b)=>String(a.titulo||'').localeCompare(String(b.titulo||''),'pt-BR',{sensitivity:'base'});
+      // Não depender da ordem retornada pelo MySQL: individuais aparecem sempre primeiro.
+      const individuais=fichas.filter(t=>t.plano_id==null).sort(ordemPt);
+      if(individuais.length){
+        const grupo=document.createElement('optgroup');grupo.label='Treinos individuais';
+        individuais.forEach(t=>grupo.append(new Option(t.titulo,String(t.id))));
+        opt.append(grupo);
+      }
+      // As fichas restantes ficam separadas pelo ID do plano, mesmo com nomes repetidos.
+      const porPlano=new Map();
+      fichas.filter(t=>t.plano_id!=null).forEach(t=>{
+        const id=String(t.plano_id);
+        if(!porPlano.has(id))porPlano.set(id,[]);
+        porPlano.get(id).push(t);
+      });
+      const titulosPlanos=new Map((planos.planos||[]).map(p=>[String(p.id),p.titulo]));
+      const nomePlano=id=>titulosPlanos.get(id)||porPlano.get(id)?.[0]?.plano_titulo||'Plano sem nome';
+      [...porPlano.keys()].sort((a,b)=>nomePlano(a).localeCompare(nomePlano(b),'pt-BR',{sensitivity:'base'})||Number(a)-Number(b)).forEach(id=>{
+        const grupo=document.createElement('optgroup');grupo.label=`Plano semanal — ${nomePlano(id)}`;
+        porPlano.get(id).sort(ordemPt).forEach(t=>grupo.append(new Option(t.titulo,String(t.id))));
+        opt.append(grupo);
+      });
+      if([...opt.options].some(o=>o.value===anterior))opt.value=anterior;
+      const idUrl=new URLSearchParams(location.search).get('treino');
+      if(idUrl&&[...opt.options].some(o=>o.value===idUrl))opt.value=idUrl;
+      el('agSalvar').disabled=!fichas.length;
+      el('agAviso').textContent=fichas.length ? '' : 'Primeiro, salve uma ficha em Meus treinos.';
+      renderCalendario();renderLista();
+    } catch(e) {el('agAviso').textContent=`Não foi possível carregar os dados: ${e.message}`;}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    el('agData').min=dataHoje;el('agData').value=dataHoje;renderCalendario();
+    const checkDias=[...document.querySelectorAll('#agDias input')];
+    const sugerirDia=()=>{if(!el('agData').value)return;const dia=(dataSemHora(el('agData').value).getDay()+6)%7;
+      if(!checkDias.some(c=>c.checked))checkDias.find(c=>Number(c.value)===dia).checked=true;};
+    el('agRepetir').addEventListener('change',()=>{el('agDiasWrap').hidden=!el('agRepetir').checked;if(el('agRepetir').checked)sugerirDia();});
+    const params=new URLSearchParams(location.search);
+    if(params.has('repetir')){el('agRepetir').checked=true;el('agDiasWrap').hidden=false;sugerirDia();}
+    if(params.has('plano'))el('programarPlano').open=true;
 
-</html>
+    const mudarMes=delta=>{
+      const novo=new Date(ano,mes+delta,1);ano=novo.getFullYear();mes=novo.getMonth();
+      semanaInicio=segundaDe(novo);carregar();
+    };
+    el('mesAnterior').addEventListener('click',()=>mudarMes(-1));
+    el('mesProximo').addEventListener('click',()=>mudarMes(1));
+    const mudarSemana=delta=>{
+      const data=new Date(semanaInicio);data.setDate(data.getDate()+7*delta);
+      semanaInicio=data;
+      const primeiroMes=new Date(ano,mes,1),ultimoMes=new Date(ano,mes+1,0);
+      const fimSemana=new Date(data);fimSemana.setDate(data.getDate()+6);
+      // Não troca de mês enquanto a semana ainda aparece no calendário atual.
+      if(data>ultimoMes||fimSemana<primeiroMes){
+        const meio=new Date(data);meio.setDate(meio.getDate()+3);
+        ano=meio.getFullYear();mes=meio.getMonth();carregar();
+      } else renderLista();
+    };
+    el('semanaAnterior').addEventListener('click',()=>mudarSemana(-1));
+    el('semanaProxima').addEventListener('click',()=>mudarSemana(1));
+    el('agData').addEventListener('change',()=>{const p=el('agData').value.split('-');if(p.length===3){ano=+p[0];mes=+p[1]-1;semanaInicio=segundaDe(dataSemHora(el('agData').value));carregar();}});
+    el('formAgenda').addEventListener('submit',async e=>{
+      e.preventDefault(); const btn=el('agSalvar');btn.disabled=true;
+      try {
+        const repetir=el('agRepetir').checked;
+        if(repetir&&!document.querySelector('#agDias input:checked'))throw new Error('Selecione ao menos um dia para repetir.');
+        await FitApp.api(repetir?'/api/agendamentos/recorrencias':'/api/agendamentos',
+          {method:'POST',body:{data_treino:el('agData').value,data_inicio:el('agData').value,
+            treino_id:el('agTreino').value,
+            dias_semana:repetir?[...document.querySelectorAll('#agDias input:checked')].map(c=>Number(c.value)):undefined}});
+        FitApp.ui.toast(repetir?'Repetição semanal criada!':'Treino incluído na agenda!','sucesso');await carregar();}
+      catch(err){FitApp.ui.toast(err.message||'Erro ao salvar.','erro');}
+      finally{btn.disabled=el('agTreino').options.length<=1;}
+    });
+    el('agPlanoSalvar').addEventListener('click',async()=>{
+      if(!el('agPlano').value){FitApp.ui.toast('Escolha um plano salvo.','info');return;}
+      if(!confirm('Programar todas as fichas desse plano para repetir semanalmente a partir da data escolhida?'))return;
+      const btn=el('agPlanoSalvar');btn.disabled=true;
+      try {const res=await FitApp.api('/api/agendamentos/recorrencias/plano',
+            {method:'POST',body:{plano_id:el('agPlano').value,data_inicio:el('agData').value}});
+        FitApp.ui.toast(res.mensagem,'sucesso');await carregar();}
+      catch(e){FitApp.ui.toast(e.message,'erro');}
+      finally{btn.disabled=false;}
+    });
+    carregar();
+  });
+})();
+</script>
+</body></html>

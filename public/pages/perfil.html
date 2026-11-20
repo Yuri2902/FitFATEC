@@ -88,29 +88,13 @@
       color: var(--text-secondary);
     }
   </style>
+  <link rel="stylesheet" href="/sidebar.css">
+  <script src="/sidebar.js" defer></script>
 </head>
 
-<body>
-
-  <header class="fit-navbar">
-    <div class="fit-nav-left">
-      <a href="/index.html" class="fit-brand">
-        <img src="../img/kiara-logo.png" alt="Kiara">
-        <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
-      </a>
-      <div class="fit-divider-v"></div>
-      <nav class="fit-nav-links">
-        <a href="/index.html" class="fit-nav-link">Início</a>
-        <a href="/pages/perfil.html" class="fit-nav-link ativo">Meu perfil</a>
-        <a href="/pages/treinos.html" class="fit-nav-link">Meus treinos</a>
-        <a href="/pages/agendamentos.html" class="fit-nav-link">Agendamentos</a>
-      </nav>
-    </div>
-    <div class="fit-nav-right">
-      <div class="fit-divider-v"></div>
-      <a id="navAuthBtn" href="/pages/conta.html" class="fit-btn-auth"><span>Entrar</span></a>
-    </div>
-  </header>
+<body class="fit-sidebar-layout" data-active-page="perfil">
+<aside id="fitSidebar" class="fit-sidebar" aria-label="Navegação principal"></aside>
+<button type="button" id="sidebarBackdrop" class="sidebar-backdrop" tabindex="-1" aria-label="Fechar menu lateral"></button>
 
   <main class="fit-container fit-grid-profile">
     <!-- COLUNA ESQUERDA: RESUMO -->
@@ -148,41 +132,6 @@
           <div class="fit-input-box" id="sideMatricula">20260001</div>
         </div>
       </div>
-      <div class="fit-info-row">
-        <svg class="fit-info-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9" />
-          <circle cx="12" cy="12" r="5" />
-          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-        </svg>
-        <div class="fit-info-body">
-          <span class="fit-label">Objetivo</span>
-          <div class="fit-input-box" id="sideObjetivo">Ganhar massa muscular</div>
-        </div>
-      </div>
-      <div class="fit-info-row">
-        <svg class="fit-info-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="4" y="14" width="3" height="6" rx="1" />
-          <rect x="10.5" y="10" width="3" height="10" rx="1" />
-          <rect x="17" y="5" width="3" height="15" rx="1" />
-        </svg>
-        <div class="fit-info-body">
-          <span class="fit-label">Nível</span>
-          <div class="fit-input-box" id="sideNivel">Intermediário</div>
-        </div>
-      </div>
-      <div class="fit-info-row">
-        <svg class="fit-info-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
-        </svg>
-        <div class="fit-info-body">
-          <span class="fit-label">Treinos por semana</span>
-          <div class="fit-input-box" id="sideFreq">3 treinos</div>
-        </div>
-      </div>
-
       <button type="button" class="fit-btn-outline-orange" style="width:100%; margin-top:16px;"
         onclick="document.getElementById('perfilNome').focus()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -202,8 +151,7 @@
         </svg>
         <div>
           <h1 style="margin:0; font-size:1.35rem;">Meu perfil</h1>
-          <p style="margin:2px 0 0; font-size:0.84rem; color:var(--text-secondary);">Gerencie seus dados pessoais, da
-            academia e preferências.</p>
+          <p style="margin:2px 0 0; font-size:0.84rem; color:var(--text-secondary);">Gerencie seus dados pessoais e de treinamento.</p>
         </div>
       </div>
 
@@ -237,6 +185,10 @@
               <label class="fit-label" for="perfilTelefone">Telefone (opcional)</label>
               <input type="tel" id="perfilTelefone" value="(11) 99999-0000">
             </div>
+            <div>
+              <label class="fit-label" for="perfilDataNascimento">Data de nascimento (opcional)</label>
+              <input type="date" id="perfilDataNascimento">
+            </div>
           </div>
         </div>
 
@@ -256,7 +208,8 @@
             <div>
               <label class="fit-label" for="perfilObjetivo">Objetivo</label>
               <select id="perfilObjetivo">
-                <option value="Ganhar massa muscular" selected>Ganhar massa muscular</option>
+                <option value="" selected>Não definido</option>
+                <option value="Ganhar massa muscular">Ganhar massa muscular</option>
                 <option value="Emagrecimento">Emagrecimento</option>
                 <option value="Condicionamento físico">Condicionamento físico</option>
                 <option value="Saúde e bem-estar">Saúde e bem-estar</option>
@@ -266,17 +219,22 @@
               <label class="fit-label" for="perfilNivel">Nível</label>
               <select id="perfilNivel">
                 <option value="Iniciante">Iniciante</option>
-                <option value="Intermediário" selected>Intermediário</option>
+                <option value="" selected>Não definido</option>
+                <option value="Intermediário">Intermediário</option>
                 <option value="Avançado">Avançado</option>
               </select>
             </div>
             <div>
               <label class="fit-label" for="perfilFrequencia">Treinos por semana</label>
               <select id="perfilFrequencia">
+                <option value="" selected>Não definido</option>
+                <option value="1 treinos">1 treino</option>
                 <option value="2 treinos">2 treinos</option>
-                <option value="3 treinos" selected>3 treinos</option>
+                <option value="3 treinos">3 treinos</option>
                 <option value="4 treinos">4 treinos</option>
                 <option value="5 treinos">5 treinos</option>
+                <option value="6 treinos">6 treinos</option>
+                <option value="7 treinos">7 treinos</option>
               </select>
             </div>
             <div>
@@ -290,58 +248,7 @@
           </div>
         </div>
 
-        <div class="profile-section-box">
-          <div class="fit-card-header" style="margin-bottom:12px;">
-            <h3 class="fit-card-title" style="font-size:0.98rem;">Preferências</h3>
-            <span class="fit-badge-manual" style="display:inline-flex; align-items:center; gap:5px;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Editar
-            </span>
-          </div>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <div>
-              <div style="font-weight:600; font-size:0.9rem;">Notificações</div>
-              <div style="font-size:0.78rem; color:var(--text-secondary);">Lembretes de treinos, aulas e agendamentos
-              </div>
-            </div>
-            <label class="fit-switch">
-              <input type="checkbox" id="perfilNotif" checked>
-              <span class="fit-slider"></span>
-            </label>
-          </div>
-
-          <div
-            style="display:grid; grid-template-columns: 1fr 220px; gap:12px; align-items:center; margin-bottom:12px;">
-            <div>
-              <div style="font-weight:600; font-size:0.9rem;">Acessibilidade</div>
-              <div style="font-size:0.78rem; color:var(--text-secondary);">Ajustes para uma experiência mais confortável
-              </div>
-            </div>
-            <select id="perfilAcessibilidade"
-              onchange="document.documentElement.setAttribute('data-acessibilidade', this.value)">
-              <option value="padrao">Padrão (sem ajustes)</option>
-              <option value="fonte-grande">Texto ampliado</option>
-            </select>
-          </div>
-
-          <div style="display:grid; grid-template-columns: 1fr 220px; gap:12px; align-items:center;">
-            <div>
-              <div style="font-weight:600; font-size:0.9rem;">Tema da interface</div>
-              <div style="font-size:0.78rem; color:var(--text-secondary);">Personalize a exibição do sistema</div>
-            </div>
-            <select id="perfilTema" onchange="document.documentElement.setAttribute('data-theme', this.value)">
-              <option value="escuro" selected>Escuro (padrão)</option>
-              <option value="claro">Claro</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; gap:14px;">
+        <div class="perfil-form-actions" style="display:flex; justify-content:space-between; gap:14px;">
           <a href="/index.html" class="fit-btn-dark" style="min-width:140px;">Cancelar</a>
           <button type="submit" class="fit-btn-primary" style="min-width:200px;">✓ Salvar alterações</button>
         </div>
@@ -391,15 +298,15 @@
                 <line x1="8" y1="2" x2="8" y2="6" />
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg></span>
-            <strong>12</strong>
-            <span>Aulas realizadas</span>
+            <strong>0</strong>
+            <span>Treinos concluídos</span>
           </div>
           <div class="stat-mini-box">
             <span style="color:var(--accent-primary);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" />
               </svg></span>
-            <strong>3/sem</strong>
+            <strong>Não definida</strong>
             <span>Frequência</span>
           </div>
           <div class="stat-mini-box">
@@ -408,27 +315,18 @@
                 <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                 <polyline points="17 6 23 6 23 12" />
               </svg></span>
-            <strong>+8%</strong>
-            <span>Evolução estimada</span>
+            <strong>0</strong>
+            <span>Programados</span>
           </div>
         </div>
       </div>
 
       <div class="fit-card">
         <div class="fit-card-header">
-          <h3 class="fit-card-title">Próxima aula agendada</h3>
+          <h3 class="fit-card-title">Próximo treino programado</h3>
           <a href="/pages/agendamentos.html" class="fit-link-more">Ver agenda ›</a>
         </div>
-        <a href="/pages/agendamentos.html" class="fit-subcard">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="fit-date-badge"><span class="dia-sem">QUA</span><span class="dia-num">12</span></div>
-            <div>
-              <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
-              <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
-            </div>
-          </div>
-          <span>›</span>
-        </a>
+        <a id="perfilProximoTreino" href="/pages/agendamentos.html" class="fit-subcard">Nenhum treino programado.</a>
       </div>
     </section>
   </main>
@@ -441,11 +339,11 @@
         const a = res.aluno;
 
         document.getElementById('sideNome').textContent = a.nome || 'Aluno';
-        document.getElementById('sideMatricula').textContent = a.matricula || '20260001';
-        document.getElementById('sideObjetivo').textContent = a.objetivo || 'Ganhar massa muscular';
-        document.getElementById('sideNivel').textContent = a.nivel || 'Intermediário';
-        const freqTexto = `${a.treinos_semana || 3} treinos`;
-        document.getElementById('sideFreq').textContent = freqTexto;
+        document.getElementById('sideMatricula').textContent = a.matricula || '';
+
+
+        const freqTexto = a.treinos_semana ? `${a.treinos_semana} treinos` : '';
+
 
         document.getElementById('perfilNome').value = a.nome || '';
         const primeiroNome = (a.nome || 'Aluno').trim().split(' ')[0];
@@ -454,19 +352,27 @@
         document.getElementById('perfilMatricula').value = a.matricula || '';
         document.getElementById('perfilEmail').value = a.email || '';
         document.getElementById('perfilTelefone').value = a.telefone || '';
-        if (a.objetivo) document.getElementById('perfilObjetivo').value = a.objetivo;
-        if (a.nivel) document.getElementById('perfilNivel').value = a.nivel;
+        document.getElementById('perfilDataNascimento').value = a.data_nascimento || '';
+        document.getElementById('perfilObjetivo').value = a.objetivo || '';
+        document.getElementById('perfilNivel').value = a.nivel || '';
         document.getElementById('perfilFrequencia').value = freqTexto;
         if (a.modalidade_principal) document.getElementById('perfilModalidade').value = a.modalidade_principal;
-        document.getElementById('perfilNotif').checked = Boolean(a.notificacoes);
-        document.getElementById('perfilAcessibilidade').value = a.acessibilidade || 'padrao';
-        document.getElementById('perfilTema').value = a.tema || 'escuro';
 
+
+
+
+
+        const proximo = document.getElementById('perfilProximoTreino');
+        if (proximo) {
+          const p = res.proximo_treino;
+          const partes = p?.data_treino?.split('-');
+          proximo.textContent = p ? `${p.treino_titulo} — ${partes[2]}/${partes[1]}/${partes[0]}${p.horario?' às '+p.horario:''}` : 'Nenhum treino programado.';
+        }
         if (res.progresso) {
           const stats = document.querySelectorAll('.stats-3grid .stat-mini-box strong');
-          if (stats[0]) stats[0].textContent = res.progresso.aulas_realizadas ?? 0;
-          if (stats[1]) stats[1].textContent = res.progresso.frequencia || '3/sem';
-          if (stats[2]) stats[2].textContent = res.progresso.evolucao_estimada || '0%';
+          if (stats[0]) stats[0].textContent = res.progresso.treinos_concluidos ?? 0;
+          if (stats[1]) stats[1].textContent = res.progresso.frequencia || 'Não definida';
+          if (stats[2]) stats[2].textContent = res.progresso.treinos_programados ?? 0;
         }
 
         if (a.avatar_url) {
@@ -491,28 +397,25 @@
         telefone: document.getElementById('perfilTelefone').value.trim(),
         objetivo: document.getElementById('perfilObjetivo').value,
         nivel: document.getElementById('perfilNivel').value,
-        treinos_semana: parseInt(freqStr, 10) || 3,
+        treinos_semana: freqStr ? parseInt(freqStr, 10) : null,
         modalidade_principal: document.getElementById('perfilModalidade').value,
-        notificacoes: document.getElementById('perfilNotif').checked ? 1 : 0,
-        acessibilidade: document.getElementById('perfilAcessibilidade').value,
-        tema: document.getElementById('perfilTema').value
+        data_nascimento: document.getElementById('perfilDataNascimento').value || null
       };
 
-      document.getElementById('sideNome').textContent = dados.nome;
-      const kiaraNomeEl = document.getElementById('kiaraSaudacaoNome');
-      if (kiaraNomeEl) kiaraNomeEl.textContent = (dados.nome || 'Aluno').split(' ')[0];
-      document.getElementById('sideObjetivo').textContent = dados.objetivo;
-      document.getElementById('sideNivel').textContent = dados.nivel;
-      document.getElementById('sideFreq').textContent = freqStr;
-      document.documentElement.setAttribute('data-theme', dados.tema);
-      document.documentElement.setAttribute('data-acessibilidade', dados.acessibilidade);
-
+      const salvar = document.querySelector('#formPerfil button[type="submit"]');
+      salvar.disabled = true;
       try {
         await FitApp.api('/api/perfil', { method: 'PUT', body: dados });
         await FitApp.sessao.init();
+        await carregarPerfil();
         FitApp.ui.toast('Alterações salvas com sucesso!', 'sucesso');
       } catch (err) {
         FitApp.ui.toast(err.message || 'Erro ao salvar perfil.', 'erro');
+        // Restaurar os valores do servidor quando uma operação falhar.
+        await FitApp.sessao.init();
+        await carregarPerfil();
+      } finally {
+        salvar.disabled = false;
       }
     }
 

@@ -1,4 +1,4 @@
-# Testes automatizados do FitFATEC. Os testes nao acessam o banco real.
+# Testes automatizados do FitFATEC. Os testes usam simulacoes de banco; execucao real com MySQL exige validacao manual separada.
 $ErrorActionPreference = 'Stop'
 $Backend = Join-Path $PSScriptRoot 'ia_academia'
 $PythonVenv = Join-Path $Backend '.venv/Scripts/python.exe'

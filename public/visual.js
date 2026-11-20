@@ -88,11 +88,11 @@
       preencherDadosComuns: function () {
         if (!this.aluno) return;
         const matInput = document.getElementById("alunoMatricula");
-        if (matInput) matInput.value = this.aluno.matricula || "20260001";
+        if (matInput) matInput.value = this.aluno.matricula || "";
         const objEl = document.getElementById("alunoObjetivo");
-        if (objEl && this.aluno.objetivo) objEl.textContent = this.aluno.objetivo;
+        if (objEl) objEl.textContent = this.aluno.objetivo || "Não definido";
         const nivEl = document.getElementById("alunoNivel");
-        if (nivEl && this.aluno.nivel) nivEl.textContent = this.aluno.nivel;
+        if (nivEl) nivEl.textContent = this.aluno.nivel || "Não definido";
       }
     },
 
@@ -171,32 +171,18 @@
       sair: async function () {
         try {
           await window.FitApp.api("/logout", { method: "POST" });
-        } catch (_) {}
-        window.location.href = "/pages/conta.html";
+          window.FitApp.historicoChat = [];
+          window.kiaraTreinoEmEdicao = null;
+          window.FitApp.sessao.aluno = null;
+          window.location.replace("/pages/conta.html");
+        } catch (err) {
+          // Não mostrar a tela de login como se o logout tivesse funcionado.
+          window.FitApp.ui.toast(err.message || "Não foi possível sair. Tente novamente.", "erro");
+        }
       }
     },
 
-    agendamento: {
-      agendarAula: async function (data, modalidade, horario, observacoes) {
-        const horarioFormatado = (horario || "").split("–")[0].trim().replace("h", ":");
-        try {
-          const res = await window.FitApp.api("/api/agendamentos", {
-            method: "POST",
-            body: {
-              data,
-              modalidade: (modalidade || "musculação").toLowerCase(),
-              horario: horarioFormatado,
-              observacoes
-            }
-          });
-          window.FitApp.ui.toast(res.mensagem || "Aula agendada com sucesso!", "sucesso");
-          return true;
-        } catch (err) {
-          window.FitApp.ui.toast(err.message || "Erro ao agendar.", "erro");
-          return false;
-        }
-      }
-    }
+
   };
 
   window.salvarTreinoDoChat = async function (textoTreino, btnEl) {
@@ -205,9 +191,11 @@
         btnEl.disabled = true;
         btnEl.textContent = "Salvando...";
       }
+      const titulo = window.kiaraTreinoEmEdicao ? '' : prompt('Nome do treino (opcional):', '');
+      if (titulo === null) { if (btnEl) {btnEl.disabled=false;btnEl.textContent='Salvar este treino';} return; }
       const res = await window.FitApp.api("/api/treinos/salvar-do-chat", {
         method: "POST",
-        body: { texto: textoTreino }
+        body: { texto: textoTreino, titulo: titulo.trim(), substituir_id: window.kiaraTreinoEmEdicao || undefined }
       });
       window.FitApp.ui.toast(res.mensagem || "Treino salvo em Meus treinos!", "sucesso");
       if (btnEl) {
@@ -231,33 +219,121 @@
     const input = document.getElementById("pergunta");
     const boxMensagens = document.getElementById("mensagens");
 
-    function pareceTreino(texto) {
-      const t = (texto || "").toLowerCase();
-      return t.includes("aquecimento:") || t.includes("treino principal") || (t.includes("séries") && t.includes("descanso"));
+    function atualizarIndicadorIA(modo) {
+      const indicador = document.getElementById("indicadorModoIA");
+      if (!indicador) return;
+      indicador.classList.remove("ia-ativa", "ia-offline", "ia-configuracao");
+      if (modo === "gemini") {
+        indicador.classList.add("ia-ativa");
+        indicador.textContent = "IA ativa";
+        indicador.title = "Esta resposta foi gerada pela IA online";
+      } else if (modo === "offline") {
+        indicador.classList.add("ia-offline");
+        indicador.textContent = "IA offline";
+        indicador.title = "Esta resposta foi gerada com recursos locais";
+      } else if (modo === "configuracao") {
+        indicador.classList.add("ia-configuracao");
+        indicador.textContent = "Configurando perfil";
+        indicador.title = "Perguntas iniciais do FitFATEC, sem geração pela IA";
+      } else {
+        indicador.textContent = "IA: aguardando";
+        indicador.title = "Aguardando a primeira resposta da Kiara";
+      }
     }
 
-    function adicionarMensagem(texto, remetente, comBotaoSalvar = false) {
+    function parecePlanoSemanal(texto) {
+      const titulos = (texto || '').match(/(?:^|\n)\s*(?:[-•*]\s*)?(?:segunda|terça|terca|quarta|quinta|sexta|sábado|sabado|domingo)(?:-feira)?\s*[:(—-]/gim) || [];
+      return titulos.length >= 2;
+    }
+
+    function pareceTreino(texto) {
+      // Ficha com exercícios prescritos (ex.: "- Agachamento: 3x10 (60s)").
+      // Uma explicação teórica sobre séries não pode virar ficha salva.
+      return /(?:^|\n)\s*[-•*]?\s*[^\n:]{3,100}:\s*\d+\s*[xX×]\s*\d+/m.test(texto || '');
+    }
+
+    function adicionarMensagem(texto, remetente, comBotaoSalvar = false, opcoes = [], etapa = null) {
       if (!boxMensagens) return null;
       const div = document.createElement("div");
       div.className = `msg ${remetente}`;
       div.textContent = texto;
 
-      if (remetente === "bot" && (comBotaoSalvar || pareceTreino(texto))) {
+      if (remetente === "bot" && (pareceTreino(texto) || parecePlanoSemanal(texto))) {
         const acoesDiv = document.createElement("div");
         acoesDiv.style.cssText = "margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:flex-end;";
         const btnSalvar = document.createElement("button");
         btnSalvar.type = "button";
         btnSalvar.className = "fit-btn-outline-orange";
         btnSalvar.style.cssText = "padding:6px 12px; font-size:0.8rem; min-height:auto;";
+        const multiplosDias=parecePlanoSemanal(texto);
         btnSalvar.innerHTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           <span>Salvar este treino</span>
         `;
-        btnSalvar.onclick = () => window.salvarTreinoDoChat(texto, btnSalvar);
+        if (multiplosDias) {
+          btnSalvar.querySelector('span').textContent='Criar prévia semanal';
+          btnSalvar.title='Abre a prévia estruturada dos dias e exercícios; não salva o texto automaticamente';
+          btnSalvar.onclick=()=>window.abrirPlanoSemanal?.(texto);
+          const nota=document.createElement('small');
+          nota.textContent='A prévia usa o gerador do FitFATEC e pode ser diferente do texto acima.';
+          nota.style.cssText='display:block;font-size:.72rem;color:var(--text-secondary);margin:5px 0;';
+          div.appendChild(nota);
+        } else {
+          btnSalvar.onclick = () => window.salvarTreinoDoChat(texto, btnSalvar);
+          if (window.kiaraTreinoEmEdicao) btnSalvar.querySelector("span").textContent="Salvar alterações";
+        }
         acoesDiv.appendChild(btnSalvar);
+        if (!multiplosDias && window.kiaraTreinoEmEdicao) {
+          const comoNovo=document.createElement('button');comoNovo.type='button';comoNovo.className='fit-btn-outline-orange';
+          comoNovo.textContent='Salvar como novo';comoNovo.onclick=()=>{
+            const anterior=window.kiaraTreinoEmEdicao;window.kiaraTreinoEmEdicao=null;
+            window.salvarTreinoDoChat(texto,comoNovo).finally(()=>{window.kiaraTreinoEmEdicao=anterior;});
+          };acoesDiv.append(comoNovo);
+        }
         div.appendChild(acoesDiv);
       }
 
+      // Durante o primeiro acesso, a resposta da Kiara oferece opções clicáveis.
+      // Botões enviam a mesma resposta validada pelo backend que o usuário digitaria.
+      if (remetente === "bot" && Array.isArray(opcoes) && opcoes.length) {
+        const grupo = document.createElement("div");
+        grupo.className = "kiara-opcoes";
+        grupo.setAttribute("aria-label", "Respostas sugeridas pela Kiara");
+        opcoes.forEach((opcao) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "kiara-escolha";
+          btn.textContent = opcao.rotulo;
+          btn.addEventListener("click", () => {
+            // Evita dois cliques e mantém o contexto da etapa atual.
+            grupo.querySelectorAll("button").forEach((b) => b.disabled = true);
+            window.enviarKiara(opcao.valor);
+          });
+          grupo.appendChild(btn);
+        });
+        if (etapa === "nascimento") {
+          const rotulo = document.createElement("label");
+          rotulo.textContent = "Data de nascimento";
+          rotulo.className = "kiara-data-label";
+          const campoData = document.createElement("input");
+          campoData.type = "date";
+          campoData.className = "kiara-data";
+          campoData.max = new Date().toISOString().slice(0, 10);
+          const confirmarData = document.createElement("button");
+          confirmarData.type = "button";
+          confirmarData.className = "kiara-escolha";
+          confirmarData.textContent = "Verificar idade";
+          confirmarData.addEventListener("click", () => {
+            if (!campoData.value) return;
+            grupo.querySelectorAll("button").forEach((b) => b.disabled = true);
+            window.enviarKiara(campoData.value);
+          });
+          rotulo.appendChild(campoData);
+          grupo.prepend(rotulo);
+          grupo.appendChild(confirmarData);
+        }
+        div.appendChild(grupo);
+      }
       boxMensagens.appendChild(div);
       boxMensagens.scrollTop = boxMensagens.scrollHeight;
       return div;
@@ -276,12 +352,50 @@
       } catch (_) {}
     }
 
+    if (boxMensagens && window.FitApp.sessao.aluno) {
+      try {
+        const boasVindas = await window.FitApp.api("/api/kiara/inicio");
+        if (boasVindas.pendente) {
+          // A pergunta vem do backend, não de um nível fixo no HTML.
+          if (!window.FitApp.historicoChat.length) boxMensagens.replaceChildren();
+          const ultima = window.FitApp.historicoChat.at(-1);
+          if (!ultima || ultima.content !== boasVindas.mensagem) {
+            adicionarMensagem(boasVindas.mensagem, "bot", false, boasVindas.opcoes, boasVindas.etapa);
+          }
+          atualizarIndicadorIA("configuracao");
+        }
+      } catch (err) {
+        if (err.status === 401) window.location.href = "/pages/conta.html";
+      }
+    }
+
+    const limparConversa = document.getElementById("limparConversa");
+    if (limparConversa && boxMensagens) {
+      limparConversa.addEventListener("click", async () => {
+        if (!window.confirm("Limpar todo o histórico da conversa com a Kiara? Seus treinos, planos e agendamentos continuarão salvos.")) return;
+        limparConversa.disabled = true;
+        try {
+          await window.FitApp.api("/api/chat/limpar", { method: "POST" });
+          boxMensagens.replaceChildren();
+          window.FitApp.historicoChat = [];
+          window.kiaraTreinoEmEdicao = null;
+          atualizarIndicadorIA("aguardando");
+          adicionarMensagem("Conversa limpa. Como posso te ajudar?", "bot");
+          window.FitApp.ui.toast("Conversa limpa.", "sucesso");
+        } catch (err) {
+          window.FitApp.ui.toast(err.message || "Não foi possível limpar a conversa.", "erro");
+        } finally { limparConversa.disabled = false; }
+      });
+    }
+
     if (form && input) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const texto = input.value.trim();
         if (!texto) return;
 
+        // Só a última pergunta da avaliação pode ficar clicável.
+        document.querySelectorAll("#mensagens .kiara-opcoes button").forEach(b => b.disabled = true);
         adicionarMensagem(texto, "user");
         window.FitApp.historicoChat.push({ role: "user", content: texto });
         input.value = "";
@@ -290,8 +404,8 @@
         const u = window.FitApp.sessao.aluno || {};
         const payloadAluno = {
           idade: u.idade || 22,
-          objetivo: u.objetivo || "Ganhar massa muscular",
-          nivel: u.nivel || "Intermediário",
+          objetivo: u.objetivo || "Não definido",
+          nivel: u.nivel || "Não definido",
           frequencia_semanal: u.treinos_semana || 3,
           meses_matricula: u.meses_matricula || 1,
           faltas_ultimo_mes: u.faltas_ultimo_mes || 0
@@ -304,13 +418,20 @@
               mensagem: texto,
               pergunta: texto,
               aluno: payloadAluno,
-              historico: window.FitApp.historicoChat
+              historico: window.FitApp.historicoChat,
+              editar_treino_id: window.kiaraTreinoEmEdicao || undefined
             }
           });
           if (loading) loading.remove();
           const respostaTexto = res.resposta || res.mensagem || "Pronto!";
-          adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino));
+          document.querySelectorAll("#mensagens .kiara-opcoes").forEach(el => el.remove());
+          adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino), res.opcoes, res.etapa);
           window.FitApp.historicoChat.push({ role: "assistant", content: respostaTexto });
+          atualizarIndicadorIA(res.modo);
+          if (res.usuario) {
+            window.FitApp.sessao.aluno = res.usuario;
+            window.FitApp.sessao.preencherDadosComuns();
+          }
 
           if (typeof window.carregarDashboard === "function") {
             window.carregarDashboard();
@@ -318,6 +439,7 @@
         } catch (err) {
           if (loading) loading.remove();
           window.FitApp.historicoChat.pop();
+          document.querySelectorAll("#mensagens .kiara-opcoes button").forEach(b => b.disabled = false);
           adicionarMensagem(
             err.status === 401
               ? "Para salvar treinos e consultar sua ficha, clique em Entrar no canto superior direito."

@@ -1,0 +1,105 @@
+/* Barra lateral do FitFATEC — substitui apenas a navegação antiga.
+   Cartões, cores, formulários e páginas continuam com os estilos originais. */
+body.fit-sidebar-layout { --sidebar-current-width: 218px; }
+body.fit-sidebar-layout.sidebar-collapsed { --sidebar-current-width: 72px; }
+.fit-sidebar-layout .fit-sidebar {
+  position:fixed;top:0;left:0;bottom:0;z-index:300;
+  width:var(--sidebar-current-width);background:#111318;
+  border-right:1px solid var(--borda-forte);display:flex;flex-direction:column;
+  padding:16px 12px 18px;gap:22px;transition:width .16s ease;
+  overflow-x:hidden;overflow-y:auto;
+}
+[data-theme="claro"] .fit-sidebar-layout .fit-sidebar,
+.fit-sidebar-layout[data-theme="claro"] .fit-sidebar { background:var(--bg-card); }
+.fit-sidebar-layout .fit-sidebar-top {display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:42px;}
+.fit-sidebar-layout .sidebar-brand {color:var(--text-primary);font-weight:800;letter-spacing:-.6px;font-size:1.42rem;text-decoration:none;white-space:nowrap;padding-left:9px;}
+.fit-sidebar-layout .sidebar-brand .brand-fatec {color:var(--accent-primary);}
+.fit-sidebar-layout .sidebar-toggle {display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border-radius:9px;border:1px solid var(--borda-forte);background:var(--bg-input);color:var(--text-secondary);cursor:pointer;}
+.fit-sidebar-layout .sidebar-toggle:hover,.fit-sidebar-layout .sidebar-toggle:focus-visible {color:var(--text-primary);border-color:var(--accent-primary);}
+.fit-sidebar-layout .sidebar-toggle svg {transition:transform .16s;transform:rotate(180deg);}
+.fit-sidebar-layout.sidebar-collapsed .sidebar-toggle svg {transform:rotate(0deg);}
+.fit-sidebar-layout .sidebar-navigation {display:flex;flex-direction:column;gap:8px;}
+.fit-sidebar-layout .sidebar-link {display:flex;align-items:center;gap:12px;color:var(--text-secondary);padding:12px 13px;white-space:nowrap;text-decoration:none;font-size:.91rem;border-radius:10px;min-height:46px;transition:background .14s,color .14s;}
+.fit-sidebar-layout .sidebar-link svg {flex-shrink:0;width:19px;height:19px;}
+.fit-sidebar-layout .sidebar-link:hover {background:var(--bg-surface);color:var(--text-primary);}
+.fit-sidebar-layout .sidebar-link.ativo {background:linear-gradient(135deg,#ff7e29,#f2580c);color:white;font-weight:600;}
+.fit-sidebar-layout .sidebar-footer {margin-top:auto;border-top:1px solid var(--borda-forte);padding-top:14px;display:flex;flex-direction:column;gap:7px;}
+.fit-sidebar-layout .sidebar-footer .fit-btn-auth {width:100%;justify-content:flex-start;min-height:43px;gap:12px;border:0;background:transparent;padding:10px 13px;white-space:nowrap;flex-shrink:0;margin-left:0!important;font-weight:500;}
+.fit-sidebar-layout .sidebar-footer .fit-btn-auth:hover {background:var(--bg-surface);}
+.fit-sidebar-layout .sidebar-footer .fit-btn-auth svg {flex-shrink:0;width:18px;height:18px;}
+.fit-sidebar-layout.sidebar-collapsed .sidebar-brand,.fit-sidebar-layout.sidebar-collapsed .sidebar-label,.fit-sidebar-layout.sidebar-collapsed .sidebar-footer .fit-btn-auth span {display:none;}
+.fit-sidebar-layout.sidebar-collapsed .sidebar-top {justify-content:center;}
+.fit-sidebar-layout.sidebar-collapsed .fit-sidebar-top {justify-content:center;}
+.fit-sidebar-layout.sidebar-collapsed .sidebar-link {justify-content:center;padding:12px 5px;}
+.fit-sidebar-layout.sidebar-collapsed .sidebar-footer .fit-btn-auth {justify-content:center;padding:10px 4px;}
+.fit-sidebar-layout .fit-container {margin-left:var(--sidebar-current-width);width:calc(100% - var(--sidebar-current-width));max-width:none;padding:24px clamp(14px,2vw,30px);flex:1;min-width:0;}
+.fit-sidebar-layout .fit-grid-3col {grid-template-columns:minmax(210px,.85fr) minmax(420px,2.1fr) minmax(250px,.95fr);}
+.fit-sidebar-layout .fit-grid-profile {grid-template-columns:minmax(215px,.85fr) minmax(420px,2.2fr) minmax(250px,.9fr);}
+.fit-sidebar-layout .fit-grid-3col > *, .fit-sidebar-layout .fit-grid-profile > *, .fit-sidebar-layout .agenda-layout > * {min-width:0;}
+/* Home: sem três cartões repetindo as seções do menu; área do chat fica maior. */
+.fit-sidebar-layout .fit-chat-home {padding-block:18px;display:block;}
+.fit-sidebar-layout .fit-chat-home .chat {height:calc(100dvh - 38px);min-height:530px;max-width:none;}
+.fit-sidebar-layout .fit-chat-home #mensagens {padding:clamp(16px,2.3vw,30px);}
+.fit-sidebar-layout .fit-chat-home .msg {max-width:min(84%,900px);}
+.fit-sidebar-layout .kiara-header-actions {display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:flex-end;}
+.fit-sidebar-layout .kiara-quick-links {display:flex;align-items:center;gap:16px;margin-left:8px;}
+.fit-sidebar-layout .kiara-quick-links a {font-size:.86rem;text-decoration:none;color:var(--text-secondary);white-space:nowrap;}
+.fit-sidebar-layout .kiara-quick-links a:hover {color:var(--accent-primary);}
+.fit-sidebar-layout .kiara-clear {border:0;background:transparent;display:inline-flex;gap:7px;align-items:center;color:var(--text-secondary);font:inherit;font-size:.8rem;cursor:pointer;padding:6px;white-space:nowrap;}
+.fit-sidebar-layout .kiara-clear:hover {color:var(--text-primary);}
+.fit-sidebar-layout .chat .informacoes-kiara {padding:13px 19px;gap:14px;}
+.fit-sidebar-layout .chat .kiara-title-group {display:flex;flex-direction:column;gap:0;line-height:1.2;}
+.fit-sidebar-layout .chat .kiara-title-group span {font-size:.75rem;}
+.fit-sidebar-layout .chat .sugestoes {justify-content:center;}
+.fit-sidebar-layout .chat .sugestoes .chip {flex:0 1 auto;}
+.sidebar-backdrop {display:none;}
+@media (max-width:1400px) {
+  .fit-sidebar-layout .fit-grid-3col,.fit-sidebar-layout .fit-grid-profile {grid-template-columns:minmax(210px,.8fr) minmax(390px,2fr);}
+  .fit-sidebar-layout .fit-grid-3col> :last-child,.fit-sidebar-layout .fit-grid-profile> :last-child {grid-column:1/-1;}
+  .fit-sidebar-layout .agenda-layout {grid-template-columns:minmax(230px,.85fr) minmax(310px,1.6fr);}
+  .fit-sidebar-layout .agenda-layout>section:last-child {grid-column:1/-1;}
+}
+@media (max-width:1060px) {
+  .fit-sidebar-layout .fit-grid-3col,.fit-sidebar-layout .fit-grid-profile,.fit-sidebar-layout .agenda-layout {grid-template-columns:1fr;}
+  .fit-sidebar-layout .fit-grid-3col> :last-child,.fit-sidebar-layout .fit-grid-profile> :last-child,.fit-sidebar-layout .agenda-layout>section:last-child {grid-column:auto;}
+  .fit-sidebar-layout .kiara-quick-links {gap:9px;}
+}
+@media (max-width:740px) {
+  body.fit-sidebar-layout {--sidebar-current-width:64px;}
+  body.fit-sidebar-layout:not(.sidebar-collapsed) {--sidebar-current-width:64px;}
+  .fit-sidebar-layout .fit-sidebar {width:64px;padding-inline:8px;}
+  .fit-sidebar-layout:not(.sidebar-collapsed) .fit-sidebar {width:230px;box-shadow:18px 0 45px #0008;}
+  .fit-sidebar-layout.sidebar-collapsed .sidebar-brand,.fit-sidebar-layout.sidebar-collapsed .sidebar-label,.fit-sidebar-layout.sidebar-collapsed .sidebar-footer .fit-btn-auth span {display:none;}
+  .fit-sidebar-layout:not(.sidebar-collapsed) .sidebar-brand,.fit-sidebar-layout:not(.sidebar-collapsed) .sidebar-label,.fit-sidebar-layout:not(.sidebar-collapsed) .sidebar-footer .fit-btn-auth span {display:initial;}
+  .fit-sidebar-layout:not(.sidebar-collapsed) .sidebar-link {justify-content:flex-start;padding:12px 13px;}
+  .fit-sidebar-layout:not(.sidebar-collapsed) .sidebar-footer .fit-btn-auth {justify-content:flex-start;padding:10px 13px;}
+  .fit-sidebar-layout:not(.sidebar-collapsed) .fit-sidebar-top {justify-content:space-between;}
+  .fit-sidebar-layout .sidebar-backdrop {display:none;}
+  .fit-sidebar-layout:not(.sidebar-collapsed) .sidebar-backdrop {display:block;position:fixed;inset:0;z-index:290;background:rgba(0,0,0,.5);border:0;}
+  .fit-sidebar-layout .fit-container {margin-left:64px;width:calc(100% - 64px);padding:12px;}
+  .fit-sidebar-layout .fit-chat-home .chat {height:calc(100dvh - 24px);min-height:440px;}
+  .fit-sidebar-layout .chat .informacoes-kiara {flex-wrap:wrap;}
+  .fit-sidebar-layout .kiara-header-actions {width:100%;justify-content:space-between;gap:8px;}
+  .fit-sidebar-layout .kiara-quick-links {display:none;}
+  .fit-sidebar-layout .kiara-clear span {display:none;}
+  .fit-sidebar-layout .chat #mensagens {padding:12px;}
+  .fit-sidebar-layout .chat .msg {max-width:96%;padding:12px;}
+  .fit-sidebar-layout .chat .sugestoes {padding:8px;gap:7px;}
+  .fit-sidebar-layout .chat .chip {padding:7px 9px;font-size:.74rem;}
+  .fit-sidebar-layout .perfil-preferencia-row {grid-template-columns:minmax(0,1fr)!important;}
+  .fit-sidebar-layout .perfil-preferencia-row select {min-width:0;max-width:100%;width:100%;}
+  .fit-sidebar-layout .perfil-form-actions {flex-wrap:wrap;}
+  .fit-sidebar-layout .perfil-form-actions > * {min-width:0!important;flex:1 1 160px;}
+  .fit-sidebar-layout #formChat {padding:8px;gap:6px;}
+  .fit-sidebar-layout #formChat #pergunta {min-width:0;padding:10px;}
+  .fit-sidebar-layout #formChat #enviar {padding:10px 12px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .fit-sidebar-layout .fit-sidebar,.fit-sidebar-layout .sidebar-toggle svg {transition:none;}
+}
+
+/* Meu perfil já está no menu principal: o rodapé exibe só Configurações e Sair.
+   A autenticação continua gerenciando o botão de saída em visual.js. */
+.fit-sidebar-layout .sidebar-footer #navAuthBtn {display:none !important;}
+.fit-sidebar-layout .sidebar-settings {width:100%;}
+.fit-sidebar-layout.sidebar-collapsed .sidebar-settings {justify-content:center;padding-inline:5px;}

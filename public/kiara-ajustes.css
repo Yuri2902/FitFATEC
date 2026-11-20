@@ -145,3 +145,80 @@
   padding: 11px 20px;
   flex-shrink: 0;
 }
+[data-theme="claro"] .chat {background:var(--bg-card)}
+[data-theme="claro"] #formChat {background:var(--bg-card)}
+[data-theme="claro"] .msg.bot {background:var(--bg-surface);color:var(--text-primary)}
+
+
+/* Escolhas guiadas da configuração inicial (inclusive no tema claro). */
+.kiara-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+.kiara-escolha {
+  border: 1px solid var(--accent-primary);
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  transition: background .15s ease, border-color .15s ease;
+}
+.kiara-escolha:hover:not(:disabled), .kiara-escolha:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border-color: var(--accent-primary);
+  outline-offset: 2px;
+}
+.kiara-escolha:disabled { opacity: .55; cursor: default; }
+.kiara-data-label { display: flex; flex-direction: column; gap: 5px; font-size: .83rem; color: var(--text-primary); width: 100%; }
+.kiara-data { padding: 9px 10px; max-width: 220px; color: var(--text-primary); background: var(--bg-input); border: 1px solid var(--borda-forte); border-radius: 9px; font: inherit; }
+
+/* Seleção livre de cor com amostra circular, preservando o seletor do navegador. */
+.fit-cor-circular {
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 3px;
+  border: 2px solid var(--borda-forte);
+  border-radius: 50%;
+  background: var(--bg-input);
+  cursor: pointer;
+  flex: none;
+  overflow: hidden;
+}
+.fit-cor-circular::-webkit-color-swatch-wrapper { padding: 0; }
+.fit-cor-circular::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.fit-cor-circular::-moz-color-swatch { border: 0; border-radius: 50%; }
+.fit-cor-circular:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 3px; }
+
+/* Dias escolhidos para o plano: botões compactos, legíveis em telas estreitas. */
+.kiara-dias-semana {
+  min-width: 0;
+  margin: 0;
+  padding: 9px 10px 10px;
+  border: 1px solid var(--borda-forte);
+  border-radius: 10px;
+}
+.kiara-dias-semana legend { font-size: .82rem; padding: 0 5px; }
+.kiara-dias-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
+.kiara-dia-opcao {
+  display: flex; justify-content: center; align-items: center; gap: 4px;
+  padding: 7px 3px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--borda-forte); background: var(--bg-input);
+  font-size: .75rem; white-space: nowrap;
+}
+.kiara-dia-opcao:has(input:checked) { border-color: var(--accent-primary); background: rgba(249, 115, 22, .1); }
+.kiara-dia-opcao input { margin: 0; width: 13px; height: 13px; accent-color: var(--accent-primary); }
+.kiara-limpar-dias {
+  background: transparent; border: 0; color: var(--accent-primary);
+  cursor: pointer; font-size: .76rem; padding: 6px 0 2px;
+}
+.kiara-dias-semana small { display: block; font-size: .75rem; }

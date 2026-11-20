@@ -7,111 +7,15 @@
   <link rel="stylesheet" href="CSS.css">
   <link rel="stylesheet" href="kiara-ajustes.css">
   <script src="visual.js" defer></script>
+  <script src="planos-ui.js" defer></script>
+  <link rel="stylesheet" href="/sidebar.css">
+  <script src="/sidebar.js" defer></script>
 </head>
-<body>
+<body class="fit-sidebar-layout" data-active-page="home">
+<aside id="fitSidebar" class="fit-sidebar" aria-label="Navegação principal"></aside>
+<button type="button" id="sidebarBackdrop" class="sidebar-backdrop" tabindex="-1" aria-label="Fechar menu lateral"></button>
 
-<header class="fit-navbar">
-  <div class="fit-nav-left">
-    <a href="/index.html" class="fit-brand">
-      <img src="img/kiara-logo.png" alt="Kiara">
-      <span><span class="brand-fit">Fit</span><span class="brand-fatec">FATEC</span></span>
-    </a>
-    <div class="fit-divider-v"></div>
-    <nav class="fit-nav-links">
-      <a href="/index.html" class="fit-nav-link ativo">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
-        Início
-      </a>
-      <a href="/pages/perfil.html" class="fit-nav-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Meu perfil
-      </a>
-      <a href="/pages/treinos.html" class="fit-nav-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>
-        Meus treinos
-      </a>
-      <a href="/pages/agendamentos.html" class="fit-nav-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Agendamentos
-      </a>
-    </nav>
-  </div>
-  <div class="fit-nav-right">
-    <div class="fit-divider-v"></div>
-    <a id="navAuthBtn" href="/pages/conta.html" class="fit-btn-auth">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-      <span>Entrar</span>
-    </a>
-  </div>
-</header>
-
-<main class="fit-container fit-grid-3col">
-  <!-- COLUNA ESQUERDA -->
-  <section class="fit-col-stack">
-    <div class="fit-card">
-      <div class="fit-card-header">
-        <h2 class="fit-card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Dados do aluno
-        </h2>
-      </div>
-
-      <div class="fit-info-row">
-        <svg class="fit-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 15c.7-1.5 2-2 3-2s2.3.5 3 2"/><line x1="14" y1="10" x2="18" y2="10"/><line x1="14" y1="14" x2="18" y2="14"/></svg>
-        <div class="fit-info-body">
-          <label class="fit-label" for="alunoMatricula">Matrícula</label>
-          <div class="fit-input-with-icon">
-            <input type="text" id="alunoMatricula" readonly value="20260001" style="padding-left:12px; padding-right:36px;">
-            <button type="button" class="right-btn" title="Copiar matrícula" onclick="FitApp.ui.copiarTexto(document.getElementById('alunoMatricula').value, this)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="fit-info-row">
-        <svg class="fit-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
-        <div class="fit-info-body">
-          <span class="fit-label">Objetivo</span>
-          <div id="alunoObjetivo" class="fit-input-box">Ganhar massa muscular</div>
-        </div>
-      </div>
-
-      <div class="fit-info-row">
-        <svg class="fit-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="14" width="3" height="6" rx="1"/><rect x="10.5" y="10" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="15" rx="1"/></svg>
-        <div class="fit-info-body">
-          <span class="fit-label">Nível</span>
-          <div id="alunoNivel" class="fit-input-box">Intermediário</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="fit-card">
-      <div class="fit-card-header">
-        <h2 class="fit-card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Próxima aula agendada
-        </h2>
-      </div>
-
-      <a href="/pages/agendamentos.html" id="boxProximaAula" class="fit-subcard">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <div>
-            <div id="proximaAulaData" style="font-weight:700; font-size:0.9rem;">Quarta, 12/03 • 18h00</div>
-            <div id="proximaAulaMod" style="font-size:0.82rem; color:var(--text-secondary);">Musculação</div>
-          </div>
-        </div>
-        <span style="color:var(--text-secondary);">›</span>
-      </a>
-
-      <a href="/pages/agendamentos.html" class="fit-btn-outline-orange" style="width:100%; margin-top:14px;">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Agendar nova aula
-      </a>
-    </div>
-  </section>
-
+<main class="fit-container fit-chat-home">
   <!-- COLUNA CENTRO (CHAT KIARA) -->
   <section class="chat">
     <div class="informacoes-kiara">
@@ -122,15 +26,22 @@
           <span>• Assistente FitFATEC</span>
         </div>
       </div>
-      <span class="fit-status-pill">
-        <span class="fit-dot-online"></span>
-        Online
-      </span>
+      <div class="kiara-header-actions">
+        <span class="fit-status-pill" id="indicadorModoIA" role="status" aria-live="polite">IA: aguardando</span>
+        <nav class="kiara-quick-links" aria-label="Acessos rápidos da Kiara">
+          <a href="/pages/treinos.html">Meus treinos</a>
+          <a href="/pages/agendamentos.html">Agendamentos</a>
+        </nav>
+        <button type="button" id="limparConversa" class="kiara-clear" title="Limpar histórico da conversa" aria-label="Limpar conversa">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M5 6l1 15h12l1-15M10 10v8M14 10v8"/></svg>
+          <span>Limpar conversa</span>
+        </button>
+      </div>
     </div>
 
     <div id="mensagens" aria-live="polite">
       <div class="msg bot">Oi! Eu sou a Kiara, sua assistente virtual da FitFATEC. 👋
-Aqui você pode gerar treinos, agendar aulas, acompanhar seus resultados e tirar dúvidas sobre os treinos e exercícios.
+Aqui você pode gerar treinos, programar seus treinos, acompanhar seus resultados e tirar dúvidas sobre os treinos e exercícios.
 
 Como posso te ajudar hoje?</div>
     </div>
@@ -140,17 +51,9 @@ Como posso te ajudar hoje?</div>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>
         Gerar treino
       </button>
-      <button type="button" class="chip" onclick="window.location.href='/pages/treinos.html'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
-        Ver meus treinos
-      </button>
-      <button type="button" class="chip" onclick="window.location.href='/pages/agendamentos.html'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Agendar aula
-      </button>
-      <button type="button" class="chip" onclick="window.location.href='/pages/perfil.html'">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Editar perfil
+      <button type="button" class="chip" onclick="window.abrirPlanoSemanal?.()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 2v4M16 2v4"/></svg>
+        Gerar plano semanal
       </button>
     </div>
 
@@ -163,90 +66,7 @@ Como posso te ajudar hoje?</div>
     </form>
   </section>
 
-  <!-- COLUNA DIREITA -->
-  <section class="fit-col-stack">
-    <div class="fit-card">
-      <div class="fit-card-header">
-        <h2 class="fit-card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>
-          Treino de hoje
-        </h2>
-        <a href="/pages/treinos.html" class="fit-link-more">Ver completo ›</a>
-      </div>
-
-      <div id="treinoHoje" class="fit-subcard">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="1.8"><path d="M7 18c-2 0-3-1.5-3-4 0-3 2-7 5-8l2 3c-1.5 1-2 2.5-2 4h5c2.5 0 4 1.5 4 3.5S16.5 20 14 20H7z"/></svg>
-          <div>
-            <div style="font-weight:700; font-size:0.95rem;">Superiores A</div>
-            <div style="font-size:0.82rem; color:var(--text-secondary);">Peito • Ombro • Tríceps</div>
-          </div>
-        </div>
-        <a href="/pages/treinos.html" class="fit-btn-primary" style="padding:9px 11px; border-radius:9px;" title="Iniciar treino">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-        </a>
-      </div>
-    </div>
-
-    <div class="fit-card">
-      <div class="fit-card-header">
-        <h2 class="fit-card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Próximos agendamentos
-        </h2>
-        <a href="/pages/agendamentos.html" class="fit-link-more">Ver agenda ›</a>
-      </div>
-
-      <div id="proximosAgendamentos" class="fit-col-stack" style="gap:10px;">
-        <a href="/pages/agendamentos.html" class="fit-subcard">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="fit-date-badge"><span class="dia-sem">QUA</span><span class="dia-num">12</span></div>
-            <div>
-              <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
-              <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
-            </div>
-          </div>
-          <span style="color:var(--text-secondary);">›</span>
-        </a>
-        <a href="/pages/agendamentos.html" class="fit-subcard">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="fit-date-badge"><span class="dia-sem">SEX</span><span class="dia-num">14</span></div>
-            <div>
-              <div style="font-weight:700; font-size:0.9rem;">Musculação</div>
-              <div style="font-size:0.8rem; color:var(--text-secondary);">18h00 – 19h00</div>
-            </div>
-          </div>
-          <span style="color:var(--text-secondary);">›</span>
-        </a>
-      </div>
-    </div>
-
-    <div class="fit-card">
-      <div class="fit-card-header">
-        <h2 class="fit-card-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-          Última série gerada
-        </h2>
-        <a href="/pages/treinos.html" class="fit-link-more">Ver série ›</a>
-      </div>
-
-      <div id="ultimaSerieCard" class="fit-subcard" style="justify-content:flex-start;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-        <div>
-          <div style="font-weight:700; font-size:0.9rem;">Hipertrofia – Intermediário</div>
-          <div style="font-size:0.8rem; color:var(--text-secondary);">3 treinos por semana • Gerada em 08/03</div>
-        </div>
-      </div>
-    </div>
-  </section>
 </main>
-
-<nav class="fit-mobile-nav">
-  <a href="/index.html" class="ativo">Início</a>
-  <a href="/pages/treinos.html">Treinos</a>
-  <a href="/pages/agendamentos.html">Agenda</a>
-  <a href="/pages/perfil.html">Perfil</a>
-</nav>
 
 <script>
   function enviarKiara(texto) {
@@ -254,42 +74,6 @@ Como posso te ajudar hoje?</div>
     document.getElementById('formChat').requestSubmit();
   }
 
-  async function carregarDashboard() {
-    try {
-      const data = await FitApp.api('/api/dashboard');
-      if (!data.ok) return;
-
-      if (data.aluno) {
-        document.getElementById('alunoMatricula').value = data.aluno.matricula || '20260001';
-        document.getElementById('alunoObjetivo').textContent = data.aluno.objetivo || 'Ganhar massa muscular';
-        document.getElementById('alunoNivel').textContent = data.aluno.nivel || 'Intermediário';
-      }
-
-      if (data.proxima_aula) {
-        document.getElementById('proximaAulaData').textContent = `${data.proxima_aula.data_aula} • ${data.proxima_aula.horario}`;
-        if (data.proxima_aula.modalidade) {
-          document.getElementById('proximaAulaMod').textContent = data.proxima_aula.modalidade;
-        }
-      }
-
-      if (data.treino_hoje) {
-        document.getElementById('treinoHoje').innerHTML = `
-          <div style="display:flex; align-items:center; gap:12px;">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="1.8"><path d="M7 18c-2 0-3-1.5-3-4 0-3 2-7 5-8l2 3c-1.5 1-2 2.5-2 4h5c2.5 0 4 1.5 4 3.5S16.5 20 14 20H7z"/></svg>
-            <div>
-              <div style="font-weight:700; font-size:0.95rem;">${data.treino_hoje.titulo}</div>
-              <div style="font-size:0.82rem; color:var(--text-secondary);">${data.treino_hoje.subtitulo || ''}</div>
-            </div>
-          </div>
-          <a href="/pages/treinos.html" class="fit-btn-primary" style="padding:9px 11px; border-radius:9px;">▶</a>
-        `;
-      }
-    } catch (_) {
-      // Mantém visualização padrão até o aluno fazer login
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', carregarDashboard);
 </script>
 </body>
 </html>

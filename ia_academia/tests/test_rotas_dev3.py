@@ -23,36 +23,27 @@ class BaseRotas(unittest.TestCase):
             sess["usuario"] = dict(SESSAO)
 
 
-@patch.object(servidor, "get_db_connection", MagicMock())
+@patch.object(servidor, 'get_db_connection', MagicMock())
+@patch.object(servidor, 'buscar_aluno_por_id', return_value=dict(ALUNO_DB))
 class TestGerarPlano(BaseRotas):
-    @patch.object(servidor.plano_semanal, "salvar_plano", return_value=[11, 12, 13])
-    @patch.object(servidor, "buscar_aluno_por_id", return_value=dict(ALUNO_DB))
-    def test_gera_com_as_opcoes_da_tela(self, _, salvar):
-        resp = self.client.post("/api/treinos/gerar-kiara", json={
-            "dias_semana": ["seg", "qua", "sex"], "local": "casa", "restricoes": ["joelho"]})
-        self.assertEqual(resp.status_code, 200)
-        corpo = resp.get_json()
-        self.assertEqual(corpo["treinos_ids"], [11, 12, 13])
-        self.assertEqual(corpo["dias"], ["Segunda-feira", "Quarta-feira", "Sexta-feira"])
-        plano = salvar.call_args.args[2]
-        self.assertEqual(plano["perfil"]["objetivo"], "emagrecimento")
-        self.assertEqual(plano["perfil"]["local"], "casa")
-        self.assertEqual(salvar.call_args.args[1], 17)
+    def test_previa_nao_salva_automaticamente(self, _):
+        resp=self.client.post('/api/planos/previsualizar',json={'dias_por_semana':3,'minutos_por_sessao':30})
+        self.assertEqual(resp.status_code,200)
+        resultado=resp.get_json()
+        self.assertTrue(resultado['assinatura'])
+        self.assertEqual(len(resultado['preview']['fichas']),3)
+        self.assertEqual(resultado['preview']['minutos_por_sessao'],30)
 
-    @patch.object(servidor.plano_semanal, "salvar_plano", return_value=[1, 2, 3, 4])
-    @patch.object(servidor, "buscar_aluno_por_id", return_value=dict(ALUNO_DB))
-    def test_sem_corpo_usa_treinos_por_semana_do_perfil(self, _, salvar):
-        resp = self.client.post("/api/treinos/gerar-kiara")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(salvar.call_args.args[2]["perfil"]["dias_semana"]), 4)
+    def test_sem_corpo_usa_frequencia_do_perfil(self, _):
+        resp=self.client.post('/api/planos/previsualizar')
+        self.assertEqual(resp.status_code,200)
+        self.assertEqual(len(resp.get_json()['preview']['fichas']),4)
 
-    @patch.object(servidor, "buscar_aluno_por_id", return_value=dict(ALUNO_DB))
     def test_opcao_invalida(self, _):
-        resp = self.client.post("/api/treinos/gerar-kiara", json={"dias_semana": ["feriado"]})
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(self.client.post('/api/planos/previsualizar',json={'dias_por_semana':9}).status_code,400)
 
-    def test_exige_login(self):
-        self.assertEqual(app.test_client().post("/api/treinos/gerar-kiara").status_code, 401)
+    def test_exige_login(self, _):
+        self.assertEqual(app.test_client().post('/api/planos/previsualizar').status_code,401)
 
 
 class TestPersonalidadeRotas(BaseRotas):
@@ -130,47 +121,6 @@ class TestPerfilDataNascimento(BaseRotas):
         self.assertEqual(resp.get_json()["aluno"]["data_nascimento"], "2012-03-03")
 
 
-class TestAgendaRotas(BaseRotas):
-    @patch.object(servidor, "listar_aulas_do_dia", return_value=[])
-    @patch.object(servidor, "inserir_agendamento", return_value=9)
-    @patch.object(servidor, "contar_ocupacao", return_value={})
-    def test_modalidade_cardio_da_tela_e_aceita(self, *_):
-        resp = self.client.post("/api/agendamentos", json={"data": str(AMANHA), "horario": "18:00", "modalidade": "cardio"})
-        self.assertEqual(resp.status_code, 201)
-
-    @patch.object(servidor, "listar_aulas_do_dia", return_value=[
-        {"data_aula": AMANHA, "horario": "07:00", "status": "agendada"},
-        {"data_aula": AMANHA, "horario": "09:00", "status": "agendado"}])
-    @patch.object(servidor, "inserir_agendamento")
-    def test_limite_de_duas_aulas_por_dia(self, inserir, _):
-        resp = self.client.post("/api/agendar", json={"data": str(AMANHA), "horario": "18:00", "modalidade": "musculação"})
-        self.assertEqual(resp.status_code, 400)
-        inserir.assert_not_called()
-
-    def _cancelar(self, agendamento):
-        conn = MagicMock()
-        conn.cursor.return_value.fetchone.return_value = agendamento
-        with patch.object(servidor, "get_db_connection", return_value=conn):
-            resp = self.client.delete("/api/agendamentos/5")
-        return resp, conn
-
-    def test_cancelar_aula_que_ja_passou_e_recusado(self):
-        ontem = {"data_aula": date.today() - timedelta(days=1), "horario": "18:00", "status": "agendada"}
-        resp, conn = self._cancelar(ontem)
-        self.assertEqual(resp.status_code, 400)
-        conn.commit.assert_not_called()
-
-    def test_cancelar_com_antecedencia(self):
-        depois = {"data_aula": date.today() + timedelta(days=2), "horario": "18:00", "status": "agendada"}
-        resp, conn = self._cancelar(depois)
-        self.assertEqual(resp.status_code, 200)
-        conn.commit.assert_called_once()
-
-    def test_cancelar_inexistente(self):
-        resp, _ = self._cancelar(None)
-        self.assertEqual(resp.status_code, 404)
-
-
 class TestTreinoDeHoje(BaseRotas):
     @patch.object(servidor, "buscar_aluno_por_id", return_value=dict(ALUNO_DB))
     def test_painel_procura_o_dia_em_portugues(self, _):
@@ -181,8 +131,9 @@ class TestTreinoDeHoje(BaseRotas):
             resp = self.client.get("/api/dashboard")
         self.assertEqual(resp.status_code, 200)
         consulta, parametros = conn.cursor.return_value.execute.call_args_list[0].args
-        self.assertIn("dia_semana", consulta)
-        self.assertEqual(parametros[1], plano_semanal.dia_do_banco(date.today()))
+        self.assertIn("JOIN treinos", consulta)
+        self.assertIn("data_treino = CURDATE()", consulta)
+        self.assertEqual(parametros, (17,))
 
 
 if __name__ == "__main__":

@@ -75,7 +75,7 @@ class TestFluxos(unittest.TestCase):
         self.assertNotIn("Caminhada/trote", resp)
 
     def test_fluxo2_agendar_aula(self):
-        self.assertIn("Agendar aula", kiara("Quero marcar uma aula"))
+        self.assertIn("Agendamentos", kiara("Quero marcar um treino na agenda"))
 
     def test_fluxo3_aquecimento(self):
         self.assertIn("esteira", kiara("Quais aquecimentos existem?").lower())

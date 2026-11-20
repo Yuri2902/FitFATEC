@@ -15,9 +15,13 @@ class TestChatSessao(unittest.TestCase):
         r = self.client.post("/api/chat", json={"aluno": ALUNO, "historico": HIST})
         self.assertEqual(r.status_code, 401)
 
+    @patch("servidor.buscar_aluno_por_id")
+    @patch("servidor.get_db_connection")
     @patch("servidor.risco_de_desistir", return_value=0.25)
     @patch("servidor.responder_com_plano", return_value=("Treino de bíceps", "gemini", {"exercicios": []}))
-    def test_chat_com_login_e_modo(self, ia, _):
+    def test_chat_com_login_e_modo(self, ia, _, db, buscar):
+        buscar.return_value = {"id_aluno": 17, "nome": "Ana", "objetivo": "condicionamento",
+                               "nivel": "iniciante", "treinos_semana": 3}
         with self.client.session_transaction() as sess:
             sess["usuario"] = {"id_aluno": 17, "nome": "Ana", "matricula": "20260017", "papel": "aluno"}
         r = self.client.post("/api/chat", json={"aluno": dict(ALUNO, matricula="99999999"), "historico": HIST})

@@ -8,38 +8,6 @@ SEGUNDA = date(2026, 11, 16)
 QUARTA = date(2026, 11, 18)
 
 
-class CursorFalso:
-    """Guarda os comandos SQL em vez de executar, e simula o id gerado."""
-
-    def __init__(self):
-        self.comandos = []
-        self.lastrowid = 0
-
-    def execute(self, sql, parametros=None):
-        self.comandos.append((sql, parametros))
-        if sql.startswith("INSERT"):
-            self.lastrowid += 1
-
-    def close(self):
-        pass
-
-
-class ConexaoFalsa:
-    def __init__(self):
-        self.cursor_falso = CursorFalso()
-        self.confirmada = False
-        self.desfeita = False
-
-    def cursor(self, dictionary=False):
-        return self.cursor_falso
-
-    def commit(self):
-        self.confirmada = True
-
-    def rollback(self):
-        self.desfeita = True
-
-
 ALUNO_DO_BANCO = {"id_aluno": 3, "objetivo": "Ganhar massa muscular", "nivel": "Intermediário", "treinos_semana": 3}
 
 
@@ -71,41 +39,6 @@ class TestNomeDoDia(unittest.TestCase):
         self.assertEqual(plano_semanal.dia_do_banco(date(2026, 11, 22)), "Domingo")
 
 
-class TestSalvarPlano(unittest.TestCase):
-    def setUp(self):
-        self.plano = plano_semanal.gerar_para_aluno(ALUNO_DO_BANCO)
-        self.conn = ConexaoFalsa()
-        self.ids = plano_semanal.salvar_plano(self.conn, 3, self.plano, hoje=QUARTA)
-        self.comandos = self.conn.cursor_falso.comandos
-
-    def test_desativa_so_o_plano_semanal_anterior(self):
-        sql, parametros = self.comandos[0]
-        self.assertTrue(sql.startswith("UPDATE treinos SET ativo = 0"))
-        self.assertIn("semana_inicio IS NOT NULL", sql)
-        self.assertEqual(parametros, (3,))
-
-    def test_uma_linha_por_dia_de_treino(self):
-        treinos = [p for sql, p in self.comandos if sql.startswith("INSERT INTO treinos ")]
-        self.assertEqual([p[3] for p in treinos], ["Segunda-feira", "Quarta-feira", "Sexta-feira"])
-        self.assertEqual(len(self.ids), 3)
-        # semana_inicio é a segunda-feira da semana em que o plano foi gerado
-        self.assertTrue(all(p[4] == SEGUNDA for p in treinos))
-
-    def test_exercicios_saem_na_ordem_das_etapas(self):
-        primeiro_treino = self.ids[0]
-        itens = [p for sql, p in self.comandos
-                 if sql.startswith("INSERT INTO treino_exercicios") and p[0] == primeiro_treino]
-        etapas = [p[8] for p in itens]
-        self.assertEqual(etapas[0], "aquecimento")
-        self.assertEqual(etapas[-1], "complementar")
-        self.assertEqual(etapas, sorted(etapas, key=["aquecimento", "principal", "complementar"].index))
-        self.assertEqual([p[7] for p in itens], list(range(1, len(itens) + 1)))
-
-    def test_confirma_a_transacao(self):
-        self.assertTrue(self.conn.confirmada)
-        self.assertFalse(self.conn.desfeita)
-
-
 class TestResumoParaKiara(unittest.TestCase):
     TREINOS = [{"id": 1, "titulo": "Treino A", "subtitulo": "Corpo inteiro", "dia_semana": "Segunda-feira"}]
 
@@ -129,6 +62,30 @@ class TestResumoParaKiara(unittest.TestCase):
 
     def test_sem_treinos_salvos(self):
         self.assertEqual(plano_semanal.resumo_para_kiara(self.conexao([]), 3, hoje=SEGUNDA), "")
+
+
+class TestPreviaComDiasEscolhidos(unittest.TestCase):
+    def test_plano_de_terca_e_quinta_respeita_os_dias(self):
+        import planejamento
+        preview = planejamento.criar_previa(None, ALUNO_DO_BANCO, {
+            'dias_por_semana': 2, 'dias_semana': ['ter', 'qui'], 'minutos_por_sessao': 30,
+        })
+        self.assertEqual([f['dia'] for f in preview['fichas']], ['ter', 'qui'])
+        self.assertEqual(preview['dias_escolhidos'], ['ter', 'qui'])
+
+    def test_quantidade_de_dias_incorreta_nao_passa(self):
+        import planejamento
+        with self.assertRaisesRegex(ValueError, 'Selecione exatamente'):
+            planejamento.criar_previa(None, ALUNO_DO_BANCO, {
+                'dias_por_semana': 3, 'dias_semana': ['ter', 'qui'], 'minutos_por_sessao': 30,
+            })
+
+    def test_dias_duplicados_nao_passam(self):
+        import planejamento
+        with self.assertRaisesRegex(ValueError, 'Selecione exatamente'):
+            planejamento.criar_previa(None, ALUNO_DO_BANCO, {
+                'dias_por_semana': 2, 'dias_semana': ['ter', 'ter'], 'minutos_por_sessao': 30,
+            })
 
 
 if __name__ == "__main__":

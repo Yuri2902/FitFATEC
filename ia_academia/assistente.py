@@ -278,6 +278,7 @@ CONTEXTO DO ALUNO (campos da tela podem estar desatualizados):
 - Nome: {aluno.get('nome') or 'Aluno'}
 - Idade: {aluno['idade']} | Objetivo: {aluno['objetivo']} | Nível: {aluno['nivel']}
 - Frequência informada: {aluno['frequencia_semanal']}x por semana
+- Duração preferida: {aluno.get('minutos_por_sessao') or 'não definida'} minutos por sessão (quando definida)
 - Meses de matrícula: {aluno['meses_matricula']}
 - Risco interno estimado (NÃO mencionar ao aluno): {risco:.0%}
 
@@ -338,10 +339,10 @@ def responder_offline(aluno: dict, historico: list, risco: float) -> str:
     leve = risco > 0.6
     prefixo = "Estou aqui com você, sem pressa. " if leve else ""
 
-    if _contem(texto, ["agend", "marcar", "horário", "horario", "reservar"]):
+    if _contem(texto, ["agend", "marcar", "programar", "horário", "horario", "reservar"]):
         return ("Vamos agendar! Sua conta já está identificada. "
-                "Clique no botão 'Agendar aula' e escolha a data, a modalidade e o horário. "
-                "Atendemos das 06h às 21h, conforme as vagas disponíveis.")
+                "Abra 'Agendamentos', escolha uma data e selecione um treino salvo. "
+                "O compromisso será adicionado ao seu calendário pessoal.")
 
     # Pedidos por músculo têm prioridade sobre a resposta genérica de "treino".
     grupos = detectar_grupos(texto)
@@ -387,7 +388,7 @@ def responder_offline(aluno: dict, historico: list, risco: float) -> str:
                 "montar sua série, explicar o aquecimento e os treinos principal e secundário. "
                 "O que você precisa?")
 
-    return ("Posso ajudar com: agendar aula, montar sua série, aquecimento, "
+    return ("Posso ajudar com: programar um treino salvo, montar sua série, aquecimento, "
             "treino principal e secundário ou nível de condicionamento. O que você prefere?")
 
 
@@ -533,7 +534,8 @@ def responder_com_plano(aluno: dict, historico: list, plano_atual: dict | None =
     # O método já faz a chamada real e retorna "offline" caso a API falhe.
     texto, modo = responder_com_modo(aluno, historico)
     if modo == "gemini":
-        # Nenhuma estrutura inventada do catálogo como se fosse o treino da IA.
+        # O estilo solicitado é aplicado somente depois da checagem de idade do servidor.
+        texto = personalidades.ajustar_estilo_online(texto, aluno.get("personalidade"), _ultima(historico, "user"))
         return texto, modo, {"exercicios": []}
 
     # Dev 3: no modo offline a personalidade aparece numa frase de abertura e numa de

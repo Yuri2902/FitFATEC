@@ -3,17 +3,15 @@
 O gerador.py monta o plano em memória. Este módulo:
 - monta o perfil de entrada a partir do aluno no banco (objetivo, nível e
   treinos_semana do perfil) somado às opções escolhidas na tela Meus treinos;
-- grava cada dia de treino como uma linha em `treinos` e os exercícios em
-  `treino_exercicios`, guardando a etapa (aquecimento, principal ou complementar);
+- oferece os parâmetros e o resumo dos treinos para o gerador; o módulo
+  `planejamento.py` controla prévia, confirmação e salvamento dos planos;
 - traduz a data para o nome do dia usado no banco ("Segunda-feira"...), que é o
   que o painel usa para achar o "Treino de hoje";
 - resume os treinos salvos em texto para a Kiara usar nas respostas.
 
-Como reconhecer um plano gerado aqui: origem = 'kiara' e semana_inicio preenchida.
-Quando o aluno gera um plano novo, só esse plano anterior é desativado; treinos
-salvos do chat (semana_inicio vazio) e treinos manuais continuam na lista.
+Os planos salvos ficam agrupados por `plano_id`. Gerar outro plano não desativa o anterior.
 """
-from datetime import date, timedelta
+from datetime import date
 
 from .gerador import ETAPAS, gerar_plano
 from .regras import DIAS_SEMANA, ErroPerfil, normalizar_nivel, normalizar_objetivo
@@ -54,7 +52,7 @@ def montar_perfil(aluno, opcoes=None):
     perfil = {
         "objetivo": opcoes.get("objetivo") or _do_perfil(aluno.get("objetivo"), normalizar_objetivo, "saude"),
         "nivel": opcoes.get("nivel") or _do_perfil(aluno.get("nivel"), normalizar_nivel, "iniciante"),
-        "minutos_por_sessao": opcoes.get("minutos_por_sessao"),
+        "minutos_por_sessao": opcoes.get("minutos_por_sessao") or aluno.get("minutos_por_sessao"),
         "local": opcoes.get("local"),
         "restricoes": opcoes.get("restricoes") or [],
     }
@@ -87,63 +85,6 @@ def _observacoes_da_sessao(plano, sessao):
     ]
     linhas += [f"- {obs}" for obs in plano["observacoes"]]
     return "\n".join(linhas)
-
-
-def salvar_plano(conn, id_aluno, plano, hoje=None):
-    """Grava o plano: uma linha em `treinos` por dia de treino. Retorna os ids criados.
-
-    Faz tudo numa transação: se algo falhar no meio, nada fica gravado pela metade.
-    """
-    hoje = hoje or date.today()
-    segunda_da_semana = hoje - timedelta(days=hoje.weekday())
-    por_letra = {s["letra"]: s for s in plano["sessoes"]}
-    cursor = conn.cursor()
-    try:
-        # Desativa só o plano semanal anterior (origem kiara + semana_inicio preenchida).
-        cursor.execute(
-            "UPDATE treinos SET ativo = 0 "
-            "WHERE aluno_id = %s AND origem = 'kiara' AND semana_inicio IS NOT NULL AND ativo = 1",
-            (id_aluno,),
-        )
-        ids = []
-        for dia in plano["semana"]:
-            if not dia["sessao"]:
-                continue
-            sessao = por_letra[dia["sessao"]]
-            quantidade = sum(len(sessao[etapa]) for etapa in ETAPAS)
-            cursor.execute(
-                "INSERT INTO treinos (aluno_id, titulo, subtitulo, dia_semana, origem, semana_inicio, observacoes) "
-                "VALUES (%s, %s, %s, %s, 'kiara', %s, %s)",
-                (
-                    id_aluno,
-                    f"Treino {sessao['letra']}",
-                    f"{sessao['nome']} • {quantidade} exercícios • ~{sessao['duracao_estimada_min']} min",
-                    DIAS_BANCO[dia["dia"]],
-                    segunda_da_semana,
-                    _observacoes_da_sessao(plano, sessao),
-                ),
-            )
-            treino_id = cursor.lastrowid
-            ordem = 1
-            # A ordem segue as etapas: aquecimento, depois principal, depois complementar.
-            for etapa in ETAPAS:
-                for item in sessao[etapa]:
-                    cursor.execute(
-                        "INSERT INTO treino_exercicios (treino_id, exercicio_id, nome_exercicio, grupo_muscular, "
-                        "series, repeticoes, descanso_segundos, ordem, etapa) "
-                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                        (treino_id, item["codigo"], item["nome"], item["grupo"], item["series"],
-                         item["repeticoes"], item["intervalo_seg"], ordem, etapa),
-                    )
-                    ordem += 1
-            ids.append(treino_id)
-        conn.commit()
-        return ids
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        cursor.close()
 
 
 def resumo_para_kiara(conn, id_aluno, hoje=None, limite=10):

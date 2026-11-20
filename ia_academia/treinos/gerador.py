@@ -226,8 +226,7 @@ def gerar_plano(dados):
 
     dias = list(perfil["dias_semana"])
     if len(dias) == 7:
-        dias.remove("dom")
-        observacoes.append("O domingo ficou livre: o corpo precisa de pelo menos um dia de descanso por semana.")
+        observacoes.append("Para sete dias de atividade, ao menos um dia será de recuperação ativa, sem musculação intensa.")
     perfil["dias_semana"] = dias
 
     nome_divisao, sequencia = montar_divisao(len(dias), perfil["nivel"])
