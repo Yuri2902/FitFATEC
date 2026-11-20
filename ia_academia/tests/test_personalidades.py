@@ -7,7 +7,7 @@ import personalidades as p
 
 HOJE = date(2026, 11, 17)
 ALUNO = {"idade": 25, "objetivo": "condicionamento", "nivel": "iniciante",
-         "frequencia_semanal": 3, "meses_matricula": 3, "faltas_ultimo_mes": 2}
+         "frequencia_semanal": 3}
 
 
 class TestCatalogo(unittest.TestCase):
@@ -81,12 +81,12 @@ class TestPrompt(unittest.TestCase):
 
     def test_prompt_do_assistente_recebe_o_modo_e_os_treinos(self):
         aluno = dict(ALUNO, personalidade="maromba", plano_semana="- Segunda-feira: Treino A")
-        instrucoes = assistente._instrucoes(aluno, 0.2, [{"role": "user", "content": "oi"}])
+        instrucoes = assistente._instrucoes(aluno, [{"role": "user", "content": "oi"}])
         self.assertIn("MAROMBA", instrucoes)
         self.assertIn("Segunda-feira: Treino A", instrucoes)
 
     def test_prompt_padrao_continua_igual(self):
-        instrucoes = assistente._instrucoes(dict(ALUNO), 0.2, [{"role": "user", "content": "oi"}])
+        instrucoes = assistente._instrucoes(dict(ALUNO), [{"role": "user", "content": "oi"}])
         self.assertNotIn("MODO DE PERSONALIDADE", instrucoes)
 
 
@@ -111,7 +111,7 @@ class TestModoOffline(unittest.TestCase):
     def test_resposta_offline_da_kiara_sai_no_estilo(self):
         aluno = dict(ALUNO, personalidade="ofensiva")
         historico = [{"role": "user", "content": "Quais aquecimentos existem?"}]
-        original = assistente.responder_offline(dict(ALUNO), historico, 0.2)
+        original = assistente.responder_offline(dict(ALUNO), historico)
         from unittest.mock import patch
         with patch.object(assistente, "client", None):
             texto, modo, _ = assistente.responder_com_plano(aluno, historico, None)

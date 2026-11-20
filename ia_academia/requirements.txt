@@ -3,7 +3,3 @@ Flask
 python-dotenv
 mysql-connector-python
 google-genai
-pandas
-numpy
-scikit-learn
-joblib

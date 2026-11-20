@@ -5,9 +5,10 @@ import planejamento
 import configuracao  # carrega .env ANTES de importar assistente e ler DB_CONFIG
 from datetime import date, datetime, timedelta
 from functools import wraps
+from time import perf_counter
 from flask import Flask, request, jsonify, send_from_directory, session, redirect
 from werkzeug.utils import secure_filename
-from assistente import responder_com_plano, risco_de_desistir
+from assistente import responder_com_plano
 import catalogo
 import biblioteca_exercicios
 import plano_kiara
@@ -64,10 +65,10 @@ def salvar_aluno_no_banco(nome, email, senha_hash):
 
         cursor.execute(
             """
-            INSERT INTO aluno (nome, email, senha_hash, papel, created_at)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+            INSERT INTO aluno (nome, email, senha_hash, created_at)
+            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
             """,
-            (nome, email, senha_hash, "aluno"),
+            (nome, email, senha_hash),
         )
         id_aluno = cursor.lastrowid
         matricula = f"{date.today().year}{id_aluno:04d}"
@@ -80,17 +81,180 @@ def salvar_aluno_no_banco(nome, email, senha_hash):
 
 
 def limpar_aluno(dados):
+    """Campos do perfil de treino consumidos pelo chat (sem dados fictícios de evasão)."""
     try:
-        return {
+        aluno = {
             "idade": int(dados["idade"]),
             "objetivo": str(dados["objetivo"]),
             "nivel": str(dados["nivel"]),
             "frequencia_semanal": int(dados["frequencia_semanal"]),
-            "meses_matricula": int(dados["meses_matricula"]),
-            "faltas_ultimo_mes": int(dados["faltas_ultimo_mes"]),
         }
-    except (KeyError, ValueError, TypeError):
+        duracao = dados.get("minutos_por_sessao")
+        if duracao not in (None, ""):
+            duracao = int(duracao)
+            if not 10 <= duracao <= 240:
+                return None
+            aluno["minutos_por_sessao"] = duracao
+        return aluno
+    except (KeyError, ValueError, TypeError, AttributeError):
         return None
+
+
+# A detecção de fichas deve aceitar duração (cardio), além de séries/repetições.
+# O frontend usa o mesmo critério em public/visual.js.
+_PADRAO_FICHA_CHAT = re.compile(
+    r"(?:^|\n)\s*(?:[-•*]\s*)?[^\n:]{3,100}:\s*"
+    r"(?:\d+\s*[xX×]\s*\d+|\d+\s*min(?:utos?)?\b)",
+    re.IGNORECASE,
+)
+
+
+def _parece_ficha_chat(texto):
+    return bool(_PADRAO_FICHA_CHAT.search(texto or ""))
+
+
+def _pedido_para_salvar_ficha_anterior(texto):
+    """Somente pedidos explícitos de salvar algo JÁ gerado, nunca gerar outra ficha."""
+    pedido = " ".join((texto or "").lower().split())
+    if not re.search(r"\b(?:salvar|salve|guardar|guarde|gravar)\b", pedido):
+        return False
+    if re.search(r"\b(?:novo|nova|outro|outra|criar|crie|gerar|gere|montar|monte|alterar|altere)\b", pedido):
+        return False
+    # "o treino para eu salvar" aponta para o treino já sugerido. Não confundir
+    # com "um treino de costas para salvar", que pede uma ficha nova.
+    if re.search(r"\b(?:um|uma)\s+(?:treino|ficha)\b|\btreino\s+de\b", pedido):
+        return False
+    return bool(re.search(
+        r"\b(?:esse|essa|este|esta|anterior|último|ultimo|agora|ele|isso|ficha|treino)\b"
+        r"|\bpara\s+(?:eu\s+)?salvar\b", pedido,
+    ))
+
+
+# Apenas atividades claramente identificáveis podem ser extraídas de uma dica
+# informal. Não inferir grupo muscular ou inventar exercícios ao pedir para salvar.
+_ATIVIDADES_COM_DURACAO = (
+    (r"caminhada\s+na\s+esteira", "Caminhada na esteira"),
+    (r"corrida\s+na\s+esteira", "Corrida na esteira"),
+    (r"bicicleta\s+ergom[eé]trica", "Bicicleta ergométrica"),
+    (r"pular\s+corda", "Pular corda"),
+    (r"caminhada", "Caminhada"),
+    (r"corrida", "Corrida"),
+    (r"esteira", "Esteira"),
+    (r"bicicleta", "Bicicleta"),
+    (r"el[ií]ptico", "Elíptico"),
+)
+_PALAVRAS_ATIVIDADE = "(?:" + "|".join(p[0] for p in _ATIVIDADES_COM_DURACAO) + ")"
+_PADROES_DICA_COM_DURACAO = (
+    # "20 minutos de esteira" / "15 min de bicicleta ergométrica"
+    re.compile(
+        rf"(?P<duracao>\d{{1,3}})\s*min(?:utos?)?\s+(?:de|na|no|em)\s+(?P<atividade>{_PALAVRAS_ATIVIDADE})\b",
+        re.IGNORECASE,
+    ),
+    # "caminhada na esteira por 20 minutos" / "bicicleta durante 10 min"
+    re.compile(
+        rf"(?P<atividade>{_PALAVRAS_ATIVIDADE})\s+(?:por|durante|de)\s+(?P<duracao>\d{{1,3}})\s*min(?:utos?)?\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+# O intervalo é uma INSTRUÇÃO do exercício principal, não outro exercício.
+# A identificação é conservadora: sem atividade e duração principal explícitas,
+# a ficha não é criada automaticamente.
+_MARCADOR_INTERVALO = re.compile(
+    r"\b(?:alternando|alternar|alterne|intercalando|intercalar|intercale)\b",
+    re.IGNORECASE,
+)
+
+
+def _ficha_de_dica_informal(texto):
+    """Estrutura uma sugestão explícita, preservando protocolos intervalados.
+
+    Ex.: 30 min de esteira alternando trote/caminhada = UM exercício de 30 min.
+    As instruções originais permanecem no texto da ficha (e, ao salvar,
+    em treinos.observacoes), sem criar exercícios extras de 1 minuto.
+    """
+    if not isinstance(texto, str) or not texto.strip():
+        return None
+
+    # Delimita trechos de alternância. Durações dentro de um protocolo
+    # não são prescrições independentes e não viram itens da ficha.
+    intervalos = []
+    for marcador in _MARCADOR_INTERVALO.finditer(texto):
+        fim = re.search(r"[.,;!?\n]", texto[marcador.start():marcador.start() + 220])
+        fim = marcador.start() + fim.start() if fim else min(len(texto), marcador.start() + 220)
+        instrucao = " ".join(texto[marcador.start():fim].split()).strip(" ,;:.-")
+        if instrucao:
+            intervalos.append((marcador.start(), fim, instrucao))
+
+    encontrados = []
+    for padrao in _PADROES_DICA_COM_DURACAO:
+        for m in padrao.finditer(texto):
+            # O 1 min de caminhada numa alternância não é um treino adicional.
+            if any(inicio <= m.start() < fim for inicio, fim, _ in intervalos):
+                continue
+            # Recusa instruções negativas como "evite 20 minutos de esteira".
+            trecho = texto[max(0, m.start() - 45):m.start()].lower()
+            trecho = re.split(r"[.!?;\n]", trecho)[-1]
+            if re.search(r"\b(?:evite|evitar|dispense|não faça|nao faca|não recomendo|nao recomendo)\b", trecho):
+                continue
+            minutos = int(m.group("duracao"))
+            if not 1 <= minutos <= 180:
+                continue
+            atividade = m.group("atividade")
+            nome = next((rotulo for expr, rotulo in _ATIVIDADES_COM_DURACAO
+                         if re.fullmatch(expr, atividade, re.IGNORECASE)), None)
+            if nome:
+                encontrados.append((m.start(), m.end(), nome, minutos))
+
+    # Dois padrões podem encontrar a mesma prescrição; não duplicar.
+    encontrados = sorted(set(encontrados), key=lambda e: e[0])
+    if not encontrados:
+        return None
+
+    linhas = []
+    ja_vistos = set()
+    tem_intervalo = False
+    for inicio, fim, nome, minutos in encontrados:
+        protocolo = None
+        for pos, _fim_intervalo, instrucao in intervalos:
+            trecho_entre = texto[fim:pos] if pos >= fim else ""
+            # O protocolo deve estar próximo do exercício, na mesma frase.
+            # Vírgula é permitida em "esteira intervalada, alternando...".
+            if 0 <= pos - fim <= 100 and not re.search(r"[.;!?\n]", trecho_entre):
+                # Se houve outra prescrição principal entre os dois,
+                # o intervalo pertence àquela mais próxima.
+                if any(fim <= outro_inicio < pos for outro_inicio, _, _, _ in encontrados):
+                    continue
+                protocolo = instrucao
+                break
+        if protocolo:
+            tem_intervalo = True
+            if "intervalad" not in nome.lower():
+                nome += " intervalada" if nome.lower().endswith("esteira") else " intervalado"
+        chave = (nome, minutos, protocolo)
+        if chave in ja_vistos:
+            continue
+        ja_vistos.add(chave)
+        detalhes = f" ({protocolo})" if protocolo else ""
+        linhas.append(f"- {nome}: 1x{minutos} min{detalhes}")
+        if len(linhas) >= 10:
+            break
+
+    if not linhas:
+        return None
+    return ("Cardio intervalado:" if tem_intervalo else "Cardio sugerido:") + "\n" + "\n".join(linhas)
+
+
+def _ultima_ficha_no_historico(historico):
+    """Usa somente a última resposta da Kiara, mesmo quando é uma dica informal."""
+    for mensagem in reversed(historico[:-1]):
+        if mensagem.get("role") == "assistant":
+            conteudo = mensagem.get("content", "")
+            if _parece_ficha_chat(conteudo):
+                return conteudo
+            return _ficha_de_dica_informal(conteudo)
+    return None
 
 
 def _serializar_agendamento(ag):
@@ -157,7 +321,6 @@ def formatar_aluno_publico(aluno):
     copia.pop("token_recuperacao", None)
     copia.pop("token_expiracao", None)
     copia["id"] = copia.get("id_aluno")
-    copia["ativo"] = not copia.get("desistiu", False)
     copia["telefone"] = copia.get("telefone") or ""
     copia["avatar_url"] = copia.get("avatar_url") or ""
     copia["treinos_semana"] = copia.get("treinos_semana")
@@ -290,15 +453,6 @@ def api_me():
     return jsonify({"usuario": session["usuario"]}), 200
 
 
-@app.post("/api/risco")
-def api_risco():
-    corpo = request.get_json(silent=True) or {}
-    aluno = limpar_aluno(corpo.get("aluno", {}))
-    if aluno is None:
-        return jsonify({"erro": "Dados do aluno inválidos"}), 400
-    return jsonify({"risco": float(risco_de_desistir(aluno))})
-
-
 @app.get("/api/chat/historico")
 @login_obrigatorio
 def api_chat_historico():
@@ -413,6 +567,9 @@ def _responder_avaliacao_inicial(usuario, mensagem):
 @app.post("/api/chat")
 @login_obrigatorio
 def api_chat():
+    # Diagnóstico apenas no terminal: tempos, sem mensagens ou dados pessoais.
+    _inicio_requisicao = perf_counter()
+    _tempos = {}
     corpo = request.get_json(silent=True) or {}
     historico = corpo.get("historico", [])
     if (not isinstance(historico, list) or not historico
@@ -443,16 +600,23 @@ def api_chat():
 
     # Dev 3: personalidade da Kiara. Lê o aluno no banco a cada mensagem para a trava
     # do modo +18 valer mesmo com a sessão desatualizada; se o banco falhar, usa a sessão.
+    _inicio_perfil = perf_counter()
     try:
         dados_aluno = buscar_aluno_por_id(id_aluno) or usuario
     except Exception:
         dados_aluno = usuario
+    finally:
+        _tempos["perfil_mysql"] = perf_counter() - _inicio_perfil
     idade_real = personalidades.calcular_idade(dados_aluno.get("data_nascimento"))
     if idade_real is not None:
         aluno["idade"] = idade_real
     aluno["personalidade"] = personalidades.resolver(dados_aluno.get("personalidade"), idade_real)
     # Dev 3: treinos salvos do aluno, para a Kiara saber qual é o treino de hoje.
-    aluno["plano_semana"] = resumo_treinos_para_kiara(id_aluno)
+    _inicio_treinos = perf_counter()
+    try:
+        aluno["plano_semana"] = resumo_treinos_para_kiara(id_aluno)
+    finally:
+        _tempos["treinos_mysql"] = perf_counter() - _inicio_treinos
 
     try:
         msg_lower = ultima_msg_user.lower()
@@ -486,6 +650,7 @@ def api_chat():
             plano_anterior = session.get("plano_kiara")
 
         editar_id = corpo.get('editar_treino_id')
+        _inicio_edicao = perf_counter()
         if editar_id:
             try:
                 editar_id = int(editar_id)
@@ -511,13 +676,31 @@ def api_chat():
                 historico_para_ia = [{'role':'user','content':contexto}]+historico_para_ia
             except (TypeError,ValueError):
                 return jsonify({'erro':'Identificador de treino inválido.'}),400
+        _tempos["contexto_edicao_mysql"] = perf_counter() - _inicio_edicao
 
-        resposta, modo, plano = responder_com_plano(aluno, historico_para_ia, plano_anterior)
+        _inicio_resposta = perf_counter()
+        texto_ficha_anterior = None
+        try:
+            if _pedido_para_salvar_ficha_anterior(ultima_msg_user):
+                texto_ficha_anterior = _ultima_ficha_no_historico(historico)
+                resposta = (
+                    "Organizei a sugestão anterior para salvar, sem acrescentar exercícios:\n\n"
+                    + texto_ficha_anterior
+                    if texto_ficha_anterior else
+                    "A sugestão anterior não tinha exercícios e durações/repetições "
+                    "suficientes para montar uma ficha. Diga qual exercício e por "
+                    "quanto tempo quer fazer; não vou inventar outro treino."
+                )
+                modo, plano = "local", plano_anterior
+            else:
+                resposta, modo, plano = responder_com_plano(aluno, historico_para_ia, plano_anterior)
+        finally:
+            _tempos["resposta_kiara"] = perf_counter() - _inicio_resposta
         session["plano_kiara"] = plano
-        
-        # Marca como salvável apenas respostas com prescrição estruturada.
-        eh_treino = int(bool(re.search(r"(?:^|\n)\s*[-•*]?\s*[^\n:]{3,100}:\s*\d+\s*[xX×]\s*\d+", resposta)))
 
+        eh_treino = int(_parece_ficha_chat(resposta))
+
+        _inicio_gravacao = perf_counter()
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
@@ -533,17 +716,23 @@ def api_chat():
         finally:
             cursor.close()
             conn.close()
+            _tempos["salvar_chat_mysql"] = perf_counter() - _inicio_gravacao
 
         return jsonify({
             "resposta": resposta,
             "modo": modo,
             "eh_treino": bool(eh_treino),
-            "risco": float(risco_de_desistir(aluno)),
             "personalidade": aluno["personalidade"],  # Dev 3: modo usado nesta resposta
+            "treino_anterior_texto": texto_ficha_anterior,
         })
     except Exception as e:
         print("Erro no chat:", e)
         return jsonify({"erro": "A Kiara não conseguiu responder agora. Tente novamente."}), 500
+    finally:
+        _tempos["total"] = perf_counter() - _inicio_requisicao
+        print("[Kiara][tempos Flask] " + " | ".join(
+            f"{etapa}={segundos:.3f}s" for etapa, segundos in _tempos.items()
+        ), flush=True)
 
 @app.post("/api/chat/limpar")
 @login_obrigatorio
@@ -1143,7 +1332,10 @@ def api_salvar_treino_do_chat():
             repeticoes = "10 - 12"
             descanso = 60
 
-            m_sr = re.search(r"(\d+)\s*[xX×]\s*([\d\s\-–]+)", detalhes)
+            m_sr = re.search(
+                r"(\d+)\s*[xX×]\s*(\d+(?:\s*[\-–]\s*\d+)?\s*(?:min(?:utos?)?|s(?:eg(?:undos?)?)?)?\b)",
+                detalhes, re.IGNORECASE,
+            )
             if m_sr:
                 series = int(m_sr.group(1))
                 repeticoes = m_sr.group(2).strip() or "10"
@@ -1155,6 +1347,10 @@ def api_salvar_treino_do_chat():
             m_desc = re.search(r"(?:descanso\s*(\d+)|\((\d+)\s*s\))", detalhes, re.IGNORECASE)
             if m_desc:
                 descanso = int(m_desc.group(1) or m_desc.group(2))
+            elif "alternando" in detalhes.lower() or "intercalando" in detalhes.lower():
+                # Intervalos estão contidos na duração total, não são descanso
+                # adicional entre séries; protocolo integral fica em observacoes.
+                descanso = 0
 
             exercicios_para_salvar.append({
                 "nome_exercicio": nome_ex[:80],

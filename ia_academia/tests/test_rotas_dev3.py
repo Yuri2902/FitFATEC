@@ -7,11 +7,10 @@ import servidor
 from servidor import app
 from treinos import plano_semanal
 
-SESSAO = {"id_aluno": 17, "nome": "Ana", "matricula": "20260017", "papel": "aluno"}
+SESSAO = {"id_aluno": 17, "nome": "Ana", "matricula": "20260017"}
 ALUNO_DB = {"id_aluno": 17, "nome": "Ana", "objetivo": "Emagrecimento", "nivel": "Iniciante",
             "treinos_semana": 4, "personalidade": "padrao", "data_nascimento": None}
-CHAT = {"aluno": {"idade": 22, "objetivo": "Emagrecimento", "nivel": "Iniciante", "frequencia_semanal": 3,
-                  "meses_matricula": 1, "faltas_ultimo_mes": 0},
+CHAT = {"aluno": {"idade": 22, "objetivo": "Emagrecimento", "nivel": "Iniciante", "frequencia_semanal": 3},
         "historico": [{"role": "user", "content": "oi"}]}
 AMANHA = date.today() + timedelta(days=1)
 
@@ -82,7 +81,6 @@ class TestPersonalidadeRotas(BaseRotas):
 
 @patch.object(servidor, "get_db_connection", MagicMock())
 @patch.object(servidor, "resumo_treinos_para_kiara", return_value="- Segunda-feira: Treino A")
-@patch.object(servidor, "risco_de_desistir", return_value=0.2)
 class TestChatComPersonalidade(BaseRotas):
     @patch.object(servidor, "responder_com_plano", return_value=("Resposta", "offline", {"exercicios": []}))
     @patch.object(servidor, "buscar_aluno_por_id",

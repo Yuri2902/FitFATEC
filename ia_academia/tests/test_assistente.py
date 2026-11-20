@@ -4,7 +4,7 @@ import unittest
 import assistente
 
 ALUNO = {"idade": 25, "objetivo": "condicionamento", "nivel": "iniciante",
-         "frequencia_semanal": 3, "meses_matricula": 3, "faltas_ultimo_mes": 2}
+         "frequencia_semanal": 3}
 
 
 def kiara(*falas):
@@ -13,7 +13,7 @@ def kiara(*falas):
     resp = ""
     for fala in falas:
         hist.append({"role": "user", "content": fala})
-        resp = assistente.responder_offline(ALUNO, hist, 0.2)
+        resp = assistente.responder_offline(ALUNO, hist)
         hist.append({"role": "assistant", "content": resp})
     return resp
 
@@ -54,7 +54,7 @@ class TestFluxos(unittest.TestCase):
             {"role": "assistant", "content": "Matrícula 20260001 recebida! Aqui está sua série."},
             {"role": "user", "content": "treino de biceps por favor"},
         ]
-        resp = assistente.responder_offline(aluno, hist, 0.2)
+        resp = assistente.responder_offline(aluno, hist)
         self.assertIn("Treino de bíceps", resp)
         self.assertIn("Rosca direta", resp)
         self.assertNotIn("Leg press", resp)
@@ -91,9 +91,9 @@ class TestFluxos(unittest.TestCase):
     def test_fluxo_motivacional(self):
         self.assertIn("20 minutos", kiara("Estou desanimado, faltei muito"))
 
-    def test_risco_alto_nao_exibe_percentual(self):
+    def test_conversa_nao_exibe_risco_de_evasao(self):
         hist = [{"role": "user", "content": "Quero um treino"}]
-        resp = assistente.responder_offline(ALUNO, hist, 0.9)
+        resp = assistente.responder_offline(ALUNO, hist)
         self.assertNotIn("%", resp)
 
 

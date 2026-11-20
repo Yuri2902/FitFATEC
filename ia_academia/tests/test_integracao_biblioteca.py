@@ -6,7 +6,7 @@ import assistente
 import biblioteca_exercicios as b
 
 ALUNO = {"idade": 25, "objetivo": "ganhar massa muscular", "nivel": "iniciante",
-         "frequencia_semanal": 3, "meses_matricula": 3, "faltas_ultimo_mes": 2}
+         "frequencia_semanal": 3}
 DADOS = [
     {"id": "001", "name": "Curl with band", "category": "upper arms", "target": "biceps", "equipment": "band", "secondary_muscles": []},
     {"id": "002", "name": "Dumbbell curl", "category": "upper arms", "target": "biceps", "equipment": "dumbbell", "secondary_muscles": []},
@@ -17,7 +17,7 @@ class Integracao(unittest.TestCase):
     def test_prompt_nao_oferece_halteres(self):
         historico = [{"role": "user", "content": "Treino de bíceps sem halteres"}]
         with patch.object(b, "carregar", return_value=DADOS):
-            txt = assistente._instrucoes(ALUNO, 0.2, historico)
+            txt = assistente._instrucoes(ALUNO, historico)
         self.assertIn("Rosca de bíceps com elástico", txt)
         self.assertNotIn("[002] Dumbbell curl", txt)
         self.assertIn("EQUIPAMENTOS PROIBIDOS", txt)

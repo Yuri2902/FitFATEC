@@ -66,15 +66,42 @@ class TestCalendario(unittest.TestCase):
 
     @patch.object(servidor, 'get_db_connection')
     def test_listagem_so_do_dono(self, db):
-        db.return_value.cursor.return_value.fetchall.return_value = [
-            {'id_agendamento': 8, 'data_treino': date.fromisoformat(AMANHA),
-             'horario': None, 'treino_titulo': 'Matador de peito', 'status': 'planejado'}]
+        cursor = db.return_value.cursor.return_value
+        # A rota faz três SELECTs distintos: agendamentos, recorrências e exceções.
+        # Cada consulta precisa receber linhas do formato esperado por ela.
+        cursor.fetchall.side_effect = [
+            [{'id_agendamento': 8, 'data_treino': date.fromisoformat(AMANHA),
+              'horario': None, 'treino_titulo': 'Matador de peito', 'status': 'planejado'}],
+            [],  # Nenhuma recorrência cadastrada
+            [],  # Nenhuma exceção de recorrência
+        ]
+
         r = self.client.get('/api/agendamentos')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.get_json()['proximos_agendamentos'][0]['treino_titulo'], 'Matador de peito')
-        query, params = db.return_value.cursor.return_value.execute.call_args.args
-        self.assertIn('JOIN treinos', query)
-        self.assertEqual(params, (17,))
+        corpo = r.get_json()
+        self.assertEqual(len(corpo['agendamentos']), 1)
+        self.assertEqual(corpo['proximos_agendamentos'][0]['treino_titulo'], 'Matador de peito')
+
+        # Verifica o escopo do aluno em TODAS as consultas, não só na última.
+        consultas = cursor.execute.call_args_list
+        self.assertEqual(len(consultas), 3)
+
+        sql_agendamentos, params_agendamentos = consultas[0].args
+        self.assertIn('FROM agendamento a', sql_agendamentos)
+        self.assertIn('JOIN treinos t', sql_agendamentos)
+        self.assertIn('WHERE a.id_aluno = %s', sql_agendamentos)
+        self.assertEqual(params_agendamentos, (17,))
+
+        sql_recorrencias, params_recorrencias = consultas[1].args
+        self.assertIn('FROM treino_recorrencia r', sql_recorrencias)
+        self.assertIn('r.aluno_id=%s', sql_recorrencias)
+        self.assertEqual(params_recorrencias, (17,))
+
+        sql_excecoes, params_excecoes = consultas[2].args
+        self.assertIn('FROM treino_recorrencia_excecao e', sql_excecoes)
+        self.assertIn('r.aluno_id=%s', sql_excecoes)
+        self.assertEqual(len(params_excecoes), 3)  # aluno + início/fim da janela
+        self.assertEqual(params_excecoes[0], 17)
 
 
 if __name__ == '__main__':

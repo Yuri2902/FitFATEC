@@ -6,7 +6,7 @@ import biblioteca_exercicios as b
 import plano_kiara as p
 
 ALUNO = {"idade": 25, "objetivo": "ganhar massa muscular", "nivel": "iniciante",
-         "frequencia_semanal": 3, "meses_matricula": 3, "faltas_ultimo_mes": 2}
+         "frequencia_semanal": 3}
 DADOS = [
     {"id": "1", "name": "Cable curl", "target": "biceps", "category": "upper arms", "equipment": "cable"},
     {"id": "2", "name": "Cable concentration curl", "target": "biceps", "category": "upper arms", "equipment": "cable"},

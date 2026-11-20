@@ -19,12 +19,4 @@ if (-not (Test-Path $envPath)) {
     [System.IO.File]::WriteAllText($envPath, $Conteudo, [System.Text.UTF8Encoding]::new($false))
     Write-Host 'Criado .env — abra e defina DB_PASSWORD e SECRET_KEY antes de executar o servidor.' -ForegroundColor Yellow
 }
-$Modelo = Join-Path $Backend 'modelo_evasao.pkl'
-if (-not (Test-Path $Modelo)) {
-    Write-Host 'Gerando modelo demonstrativo de risco com dados sinteticos...' -ForegroundColor Cyan
-    & $PythonVenv (Join-Path $Backend 'gerar_dados.py')
-    if ($LASTEXITCODE -ne 0) { throw 'Falha gerando dados sinteticos.' }
-    & $PythonVenv (Join-Path $Backend 'treinar_modelo.py')
-    if ($LASTEXITCODE -ne 0) { throw 'Falha treinando modelo.' }
-}
 Write-Host 'Dependencias prontas. Confirme banco SQL e .env e execute .\iniciar.ps1' -ForegroundColor Green

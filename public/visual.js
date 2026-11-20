@@ -235,6 +235,10 @@
         indicador.classList.add("ia-configuracao");
         indicador.textContent = "Configurando perfil";
         indicador.title = "Perguntas iniciais do FitFATEC, sem geração pela IA";
+      } else if (modo === "local") {
+        indicador.classList.add("ia-ativa");
+        indicador.textContent = "Ação local";
+        indicador.title = "A ficha anterior foi recuperada da conversa, sem nova geração pela IA";
       } else {
         indicador.textContent = "IA: aguardando";
         indicador.title = "Aguardando a primeira resposta da Kiara";
@@ -247,25 +251,28 @@
     }
 
     function pareceTreino(texto) {
-      // Ficha com exercícios prescritos (ex.: "- Agachamento: 3x10 (60s)").
-      // Uma explicação teórica sobre séries não pode virar ficha salva.
-      return /(?:^|\n)\s*[-•*]?\s*[^\n:]{3,100}:\s*\d+\s*[xX×]\s*\d+/m.test(texto || '');
+      // Reconhece fichas por repetições (3x10) OU duração (20 min, 3x2 min).
+      // Exige prescrição junto ao nome do exercício, não apenas o título "Cardio".
+      return /(?:^|\n)\s*(?:[-•*]\s*)?[^\n:]{3,100}:\s*(?:\d+\s*[xX×]\s*\d+|\d+\s*min(?:utos?)?\b)/im.test(texto || '');
     }
 
-    function adicionarMensagem(texto, remetente, comBotaoSalvar = false, opcoes = [], etapa = null) {
+    function adicionarMensagem(texto, remetente, comBotaoSalvar = false, opcoes = [], etapa = null, treinoAnterior = null) {
       if (!boxMensagens) return null;
       const div = document.createElement("div");
       div.className = `msg ${remetente}`;
       div.textContent = texto;
 
-      if (remetente === "bot" && (pareceTreino(texto) || parecePlanoSemanal(texto))) {
+      // Se o aluno pediu para salvar a ficha anterior, o servidor devolve o
+      // texto exato da ficha, sem pedir ao Gemini que gere uma nova.
+      const textoAlvo = treinoAnterior || texto;
+      if (remetente === "bot" && (pareceTreino(textoAlvo) || parecePlanoSemanal(textoAlvo))) {
         const acoesDiv = document.createElement("div");
         acoesDiv.style.cssText = "margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:flex-end;";
         const btnSalvar = document.createElement("button");
         btnSalvar.type = "button";
         btnSalvar.className = "fit-btn-outline-orange";
         btnSalvar.style.cssText = "padding:6px 12px; font-size:0.8rem; min-height:auto;";
-        const multiplosDias=parecePlanoSemanal(texto);
+        const multiplosDias=parecePlanoSemanal(textoAlvo);
         btnSalvar.innerHTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           <span>Salvar este treino</span>
@@ -273,13 +280,14 @@
         if (multiplosDias) {
           btnSalvar.querySelector('span').textContent='Criar prévia semanal';
           btnSalvar.title='Abre a prévia estruturada dos dias e exercícios; não salva o texto automaticamente';
-          btnSalvar.onclick=()=>window.abrirPlanoSemanal?.(texto);
+          btnSalvar.onclick=()=>window.abrirPlanoSemanal?.(textoAlvo);
           const nota=document.createElement('small');
           nota.textContent='A prévia usa o gerador do FitFATEC e pode ser diferente do texto acima.';
           nota.style.cssText='display:block;font-size:.72rem;color:var(--text-secondary);margin:5px 0;';
           div.appendChild(nota);
         } else {
-          btnSalvar.onclick = () => window.salvarTreinoDoChat(texto, btnSalvar);
+          btnSalvar.onclick = () => window.salvarTreinoDoChat(textoAlvo, btnSalvar);
+          if (treinoAnterior) btnSalvar.querySelector("span").textContent="Salvar treino anterior";
           if (window.kiaraTreinoEmEdicao) btnSalvar.querySelector("span").textContent="Salvar alterações";
         }
         acoesDiv.appendChild(btnSalvar);
@@ -287,7 +295,7 @@
           const comoNovo=document.createElement('button');comoNovo.type='button';comoNovo.className='fit-btn-outline-orange';
           comoNovo.textContent='Salvar como novo';comoNovo.onclick=()=>{
             const anterior=window.kiaraTreinoEmEdicao;window.kiaraTreinoEmEdicao=null;
-            window.salvarTreinoDoChat(texto,comoNovo).finally(()=>{window.kiaraTreinoEmEdicao=anterior;});
+            window.salvarTreinoDoChat(textoAlvo,comoNovo).finally(()=>{window.kiaraTreinoEmEdicao=anterior;});
           };acoesDiv.append(comoNovo);
         }
         div.appendChild(acoesDiv);
@@ -407,8 +415,7 @@
           objetivo: u.objetivo || "Não definido",
           nivel: u.nivel || "Não definido",
           frequencia_semanal: u.treinos_semana || 3,
-          meses_matricula: u.meses_matricula || 1,
-          faltas_ultimo_mes: u.faltas_ultimo_mes || 0
+          minutos_por_sessao: u.minutos_por_sessao || null
         };
 
         try {
@@ -425,7 +432,7 @@
           if (loading) loading.remove();
           const respostaTexto = res.resposta || res.mensagem || "Pronto!";
           document.querySelectorAll("#mensagens .kiara-opcoes").forEach(el => el.remove());
-          adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino), res.opcoes, res.etapa);
+          adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino), res.opcoes, res.etapa, res.treino_anterior_texto || null);
           window.FitApp.historicoChat.push({ role: "assistant", content: respostaTexto });
           atualizarIndicadorIA(res.modo);
           if (res.usuario) {

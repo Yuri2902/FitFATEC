@@ -7,7 +7,7 @@ import assistente
 
 ALUNO = {
     "idade": 25, "objetivo": "ganhar massa muscular", "nivel": "iniciante",
-    "frequencia_semanal": 3, "meses_matricula": 3, "faltas_ultimo_mes": 2,
+    "frequencia_semanal": 3,
 }
 
 
@@ -26,7 +26,6 @@ class GeminiPrimeiro(unittest.TestCase):
         historico = [{"role": "user", "content": fala}]
         with patch.object(assistente, "client", cliente), \
                 patch.object(assistente, "_types", tipos_simulados()), \
-                patch.object(assistente, "risco_de_desistir", return_value=0.2), \
                 patch.object(assistente.plano_kiara, "tratar") as planner:
             texto, modo, estado = assistente.responder_com_plano(ALUNO, historico)
             planner.assert_not_called()
@@ -55,7 +54,7 @@ class GeminiPrimeiro(unittest.TestCase):
         historico = [{"role":"user", "content":"Sem halteres, quero treino de bíceps"},
                      {"role":"assistant", "content":"Você pode usar peso corporal."},
                      {"role":"user", "content":"Agora quero pernas sem máquinas"}]
-        prompt = assistente._instrucoes(ALUNO, 0.2, historico)
+        prompt = assistente._instrucoes(ALUNO, historico)
         self.assertIn("EQUIPAMENTOS PROIBIDOS", prompt)
         self.assertIn("dumbbell", prompt)
         self.assertIn("cable", prompt)
@@ -65,8 +64,7 @@ class GeminiPrimeiro(unittest.TestCase):
         cliente.models.generate_content.side_effect = RuntimeError("indisponível")
         historico = [{"role":"user", "content":"Quero treino de bíceps"}]
         with patch.object(assistente, "client", cliente), \
-             patch.object(assistente, "_types", tipos_simulados()), \
-             patch.object(assistente, "risco_de_desistir", return_value=0.2):
+             patch.object(assistente, "_types", tipos_simulados()):
             texto, modo, estado = assistente.responder_com_plano(ALUNO, historico)
         self.assertEqual(modo, "offline")
         self.assertIn("Bíceps", texto)
@@ -77,8 +75,7 @@ class GeminiPrimeiro(unittest.TestCase):
         cliente.models.generate_content.return_value.text = ""
         historico = [{"role":"user", "content":"Quero treino de bíceps"}]
         with patch.object(assistente, "client", cliente), \
-             patch.object(assistente, "_types", tipos_simulados()), \
-             patch.object(assistente, "risco_de_desistir", return_value=0.2):
+             patch.object(assistente, "_types", tipos_simulados()):
             texto, modo, estado = assistente.responder_com_plano(ALUNO, historico)
         self.assertEqual(modo, "offline")
         self.assertTrue(estado["exercicios"])

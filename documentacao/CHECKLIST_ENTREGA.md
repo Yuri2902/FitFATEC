@@ -1,23 +1,27 @@
-# Checklist da avaliação — Engenharia de Software II
+# FitFATEC — Checklist interno de entrega
 
-Verificado contra `documentacao/requisitos_ia.pdf` (11 páginas, fornecido com o projeto). Status em 13/11/2026.
+**Atualização:** 20/11/2026. **Finalidade:** orientar a conferência da aplicação antes da apresentação. Este documento **não comprova, por si só, o cumprimento do enunciado**. A comparação final com `requisitos_ia.pdf` será feita separadamente.
 
-| Requisito do enunciado | Evidência na versão atual | Situação |
+| Item | Implementação ou evidência disponível | Verificação pendente |
 |---|---|---|
-| IA generativa | `assistente.py`, integração `google-genai`, testes mockados e uso relatado nas capturas | Implementado; exige chave/conectividade |
-| Nome e tom/persona digital | `assistente.py` (`PERSONA`) e `DOCUMENTO_PROJETO.md` | Descrito |
-| Traços antropomórficos completos | Persona atual é onça-mascote; não há documentação de pele/cabelo humanos | Alinhar interpretação com professor |
-| Imagem gerada por IA da persona | `public/img/kiara.svg` existe, mas sua procedência não está comprovada | Pendente comprovação/arte final |
-| Interface conversacional | `public/index.html`, CSS e JS | Implementado (prototipado) |
-| Agendar aula | `servidor.py` e formulário da página | Implementado; validar com MySQL real nesta versão |
-| Série de exercícios | Catálogo, `plano_kiara.py` e Kiara | Implementado (não persiste série) |
-| Aquecimentos | `catalogo.py` e conversa | Implementado como catálogo/explicação |
-| Treino principal e secundário | `catalogo.py` | Implementado em série demonstrativa |
-| Nível iniciante/intermediário/avançado | Interface e `catalogo.py` | Implementado, dados ainda manuais |
-| Cinco fluxos completos | `FLUXOS_CONVERSA.md` traz 6 fluxos demonstrativos | Documentados; validar em execução |
-| Protótipo navegável | Flask serve `/`, `/conta`, agendas e APIs | Implementado |
-| Documento de projeto | `DOCUMENTO_PROJETO.md` | Criado nesta revisão |
-| Demonstração por vídeo ou apresentação | Não consta artefato no ZIP | Pendente |
-| Precificação | `PRECIFICACAO.md` contém categorias e método de cálculo | Rascunho; falta estimativa numérica aprovada |
+| Cadastro, login e recuperação de senha | Rotas em `ia_academia/servidor.py` e interface web | Testar no MySQL usado na demonstração |
+| Perfil e preferências | Perfil, tema, acessibilidade e personalidade da Kiara | Conferir persistência após novo login |
+| Assistente Kiara | Integração com Gemini e alternativas locais para alguns fluxos | Testar respostas com a chave configurada; distinguir resposta da IA de retorno local |
+| Identidade da personagem | Personalidades em `ia_academia/personalidades.py` e elementos visuais em `public/` | Verificar evidência de criação da imagem exigida pelo professor |
+| Fichas individuais | Geração/edição e persistência em `treinos` e `treino_exercicios` | Criar, salvar e reabrir uma ficha |
+| Planos semanais | Agrupamento de fichas em `plano_treino` | Salvar, reabrir e revisar um plano |
+| Revisão com a Kiara | Ações na biblioteca de treinos e fluxo de conversa | Validar contexto da ficha e confirmação antes de salvar alterações |
+| Exercícios e aquecimento | Catálogo e orientações da Kiara | Testar nível e restrições de equipamento |
+| Agendamento pessoal de treinos | Calendário, data avulsa, recorrências e cancelamento de ocorrência | Testar datas e dias da semana; comparar a adaptação com o requisito do professor |
+| Histórico de execução | Tabela `treino_execucoes` | Concluir um treino de teste e reabrir histórico |
+| Conversa e logout | Histórico da sessão e chat novo ao entrar novamente | Confirmar que logout não reutiliza a conversa anterior |
+| Fluxos conversacionais | Exemplos em `FLUXOS_CONVERSA.md` | Executar pelo menos cinco fluxos e registrar evidências reais |
+| Vídeo ou apresentação | Material produzido separadamente pela equipe | Confirmar arquivo final de entrega |
+| Precificação | **Documento separado, fora deste repositório** | Conferir a entrega separada pelo grupo |
 
-**Observações:** o PDF usa exemplo de solicitar matrícula no fluxo. O FitFATEC identifica matrícula automaticamente pela sessão — adaptação de UX e segurança a explicar na apresentação. O risco de desistência é recurso adicional do grupo, não requisito mínimo do enunciado.
+## Observações
+
+- O calendário do FitFATEC é **pessoal**: ele agenda fichas salvas, não reserva vagas em aulas de academia. A aderência ao enunciado deve ser avaliada na revisão específica do PDF.
+- Os fluxos de `FLUXOS_CONVERSA.md` são **roteiros de teste**, não transcrições de conversas reais nem prova de que todas as respostas foram produzidas pelo Gemini.
+- Para quem já usa o banco `fitfatec`, **não reimportar o SQL canônico** durante os testes. Preservar os dados existentes.
+- Antes da apresentação, conferir o projeto com `README.md`, `como_executar/LEIA-ME.txt` e `documentacao/requisitos_ia.pdf`.

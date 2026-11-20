@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import assistente
 
 ALUNO = {"idade": 25, "objetivo": "ganhar massa muscular", "nivel": "iniciante",
-         "frequencia_semanal": 3, "meses_matricula": 3, "faltas_ultimo_mes": 1}
+         "frequencia_semanal": 3}
 
 
 def tipos():
@@ -20,28 +20,25 @@ class RespostasObjetivas(unittest.TestCase):
         self.assertEqual(assistente._tipo_de_resposta("junto os dois"), "treino")
 
     def test_treino_sem_intro_final(self):
-        prompt = assistente._instrucoes(ALUNO, .2,
-             [{"role":"user","content":"Quero um treino de pernas"}])
+        prompt = assistente._instrucoes(ALUNO, [{"role":"user","content":"Quero um treino de pernas"}])
         self.assertIn("FICHA OBJETIVA", prompt)
         self.assertIn("NÃO escreva introduções", prompt)
         self.assertIn("NÃO escreva conclusão", prompt)
 
     def test_explicacao_tem_formato_proprio(self):
-        prompt = assistente._instrucoes(ALUNO, .2,
-             [{"role":"user","content":"Explique como executar afundo caminhando"}])
+        prompt = assistente._instrucoes(ALUNO, [{"role":"user","content":"Explique como executar afundo caminhando"}])
         self.assertIn("EXPLICAÇÃO SOB DEMANDA", prompt)
         self.assertNotIn("FICHA OBJETIVA", prompt)
 
     def test_conversa_curta(self):
-        prompt = assistente._instrucoes(ALUNO, .2,
-             [{"role":"user","content":"Oi Kiara!"}])
+        prompt = assistente._instrucoes(ALUNO, [{"role":"user","content":"Oi Kiara!"}])
         self.assertIn("CONVERSA CURTA", prompt)
 
     def test_catologo_e_consultado_no_treino(self):
         hist = [{"role":"user","content":"Treino para bíceps sem halteres"}]
         fake = {"itens": [{"nome_pt":"Rosca com elástico", "target":"biceps", "equipment":"band"}]}
         with patch.object(assistente.biblioteca_exercicios,"selecionar",return_value=fake) as m:
-            prompt=assistente._instrucoes(ALUNO,.2,hist)
+            prompt=assistente._instrucoes(ALUNO, hist)
         m.assert_called_once()
         self.assertIn("Rosca com elástico",prompt)
         self.assertIn("referência, não limite exclusivo",prompt)
@@ -55,7 +52,7 @@ class RespostasObjetivas(unittest.TestCase):
         self.assertEqual(set(assistente._grupos_do_contexto(hist,hist[-1]['content'])),
                          {"biceps","pernas"})
         with patch.object(assistente.biblioteca_exercicios,"selecionar",return_value={"itens":[]}) as m:
-            assistente._instrucoes(ALUNO,.2,hist)
+            assistente._instrucoes(ALUNO, hist)
         self.assertIn("biceps",m.call_args.args[0][-1]["content"])
         self.assertIn("pernas",m.call_args.args[0][-1]["content"])
 
@@ -65,7 +62,6 @@ class RespostasObjetivas(unittest.TestCase):
         hist=[{"role":"user","content":"Monte um treino de pernas"}]
         with patch.object(assistente,"client",client), \
              patch.object(assistente,"_types",tipos()), \
-             patch.object(assistente,"risco_de_desistir",return_value=.2), \
              patch.object(assistente.plano_kiara,"tratar") as planner:
             resposta, modo, _ = assistente.responder_com_plano(ALUNO,hist)
         self.assertEqual(modo,"gemini")
@@ -77,7 +73,7 @@ class RespostasObjetivas(unittest.TestCase):
         hist=[{"role":"user","content":"sem halteres, quero treinar bíceps"},
               {"role":"assistant","content":"certo"},
               {"role":"user","content":"agora pernas sem máquinas"}]
-        prompt=assistente._instrucoes(ALUNO,.2,hist)
+        prompt=assistente._instrucoes(ALUNO, hist)
         self.assertIn("dumbbell",prompt)
         self.assertIn("cable",prompt)
 

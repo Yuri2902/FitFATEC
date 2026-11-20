@@ -1,71 +1,36 @@
 # FitFATEC — Documento de projeto
 
-**Revisão:** 13/11/2026 · **Base:** versão fornecida pelo grupo no ZIP do mesmo dia.  
-**Disciplina:** Engenharia de Software II — DSM · **Escopo:** protótipo acadêmico.
+**Revisão:** 20/11/2026. **Contexto:** protótipo acadêmico de planejamento de treinos pessoais.
 
-## 1. Descrição e objetivo
+## Visão geral
 
-O FitFATEC é um protótipo de academia com uma assistente virtual chamada **Kiara**. A interface oferece conversa em português, série de exercícios conforme objetivo/nível, aquecimentos, orientação sobre treino principal/secundário e agendamento de aulas para aluno autenticado. Inclui um classificador experimental de evasão construído sobre registros sintéticos.
+O FitFATEC oferece cadastro e autenticação de alunos, configuração de perfil,
+assistente Kiara (Gemini, com modo offline), geração de fichas e planos semanais,
+biblioteca pessoal de treinos, agendamentos por data e repetição, registro de execução
+e histórico da conversa. Não gerencia frequência presencial, instrutores ou desistência.
 
-## 2. Persona digital
+## Tecnologias
 
-- **Nome:** Kiara.
-- **Representação atual no produto:** mascote de onça-pintada simpática, ícone SVG em `public/img/kiara.svg`.
-- **Identidade conceitual no prompt:** personalidade jovem adulta (~25 anos), uniforme laranja e preto, identidade visual relacionada ao FitFATEC.
-- **Tom/estilo:** amigável, objetivo, motivador, português brasileiro, mensagens curtas e perguntas claras.
-- **Atendimento:** pela interface web, em qualquer horário (depende de servidor ativo).
-- **Acessibilidade:** ajustes de interface e linguagem devem continuar sendo avaliados; não há implementação de recursos completos de acessibilidade documentada nesta versão.
+- Frontend: HTML/CSS/JavaScript em `public/`
+- Backend: Flask (`ia_academia/servidor.py`), sessão e hash de senha Werkzeug
+- Banco: MySQL 8 (`bdd/bd_fitfatec.sql`)
+- IA generativa: Gemini via `google-genai` (opcional, usa catálogo local na indisponibilidade)
+- Biblioteca de exercícios: metadados ExerciseDB licenciados MIT, traduções locais
 
-**Pendência para aprovação do grupo/professor:** o enunciado pede traços antropomórficos (pele, cabelo, olhos, formato de rosto). A persona adotada é uma **onça-mascote**; o grupo deve verificar se essa interpretação satisfaz a avaliação. Também não há prova de que o SVG atual foi **gerado por IA**, como o enunciado exige. Não marcar esses itens como entregues sem validar.
+## Principais fluxos
 
-## 3. Tecnologias
+1. Cadastro/login -> avaliação inicial/edição do perfil e das preferências.
+2. Conversa com a Kiara -> sugestão, revisão e confirmação de treino.
+3. Meus treinos -> fichas individuais e agrupadas em planos semanais; fichas arquivadas
+   não desaparecem do histórico de execução.
+4. Agendamentos -> data individual, regras semanais e exceções de ocorrência.
+5. Logout -> encerra a conversa atual; novo login começa com chat limpo.
 
-| Camada | Tecnologia |
-|---|---|
-| Frontend | HTML/CSS/JavaScript estáticos em `public/` |
-| Backend / API | Python 3.10+ e Flask |
-| Autenticação | Sessão Flask + hash de senha Werkzeug |
-| Dados relacionais | MySQL 8 (`bdd/bd_fitfatec.sql`) |
-| IA generativa | API Gemini via `google-genai` (opcional) |
-| Exercícios | Catálogo próprio + metadados ExerciseDB MIT; traduções locais por ID |
-| Classificação experimental | scikit-learn / RandomForest + joblib + pandas |
-| Interface alternativa/legado | Streamlit, opcional (`app.py`) |
+## Limitações e segurança
 
-## 4. Arquitetura e fluxo
+A IA não substitui professor de educação física ou avaliação de saúde. Publicação
+na Internet exige revisão de CSRF, cookies seguros, autenticação, backups e acesso
+aos dados pessoais. Manter `GEMINI_API_KEY` e credenciais do banco fora do Git.
 
-```text
-Navegador (public/index.html / public/pages/conta.html)
-        | HTTP/JSON, sessão cookie Flask
-        v
-ia_academia/servidor.py
-        |-- auth_utils.py ---> MySQL (aluno, agendamento)
-        |-- assistente.py ---> Gemini (se configurado)
-        |        |-- plano_kiara.py
-        |        |-- biblioteca_exercicios.py + traduções / IDs
-        |        `-- modelo_evasao.pkl (modelo artificial)
-        `-- catalogo.py (séries demonstrativas)
-```
-
-**Segurança:** o agendamento usa `id_aluno` da sessão de login; uma matrícula fornecida pelo cliente não autoriza marcar aulas para terceiros. O arquivo `.env` é local e ignorado pelo Git. Em um sistema publicado seria necessário revisar CSRF, cookies seguros, autenticação e disponibilidade/conflitos de agendamento.
-
-**Estado dos planos:** a Kiara mantém uma versão do treino na sessão Flask; **não existe persistência de planos em MySQL nesta entrega**. A tabela `treino` existe, mas a interface ainda não salva as sugestões nela.
-
-## 5. Rotas principais (existentes)
-
-- `GET /` — página inicial; `GET /conta` — cadastro/login; `GET /teste-auth` — alias legado.
-- `GET /health` — saúde do servidor Flask.
-- `POST /cadastro`, `POST /login`, `POST /logout`, `GET /api/me` — autenticação e sessão.
-- `POST /api/chat`, `POST /api/chat/limpar` — conversa e limpeza do estado do plano.
-- `POST /api/risco`, `GET /api/serie` — risco experimental e série simples.
-- `GET /api/horarios`, `POST /api/agendar` — disponibilidade e agendamento.
-
-## 6. Restrições, ética e propriedade intelectual
-
-- Não utilizar risco sintético para tomar decisões sobre alunos reais.
-- Não oferecer prescrições médicas nem garantir que todo exercício serve para qualquer aluno; consultar profissional de educação física para individualização.
-- Catálogo de exercícios ampliado a partir de metadados licenciados MIT; preservar avisos de autoria da fonte e **não copiar imagens, GIFs ou conteúdo próprio do openGym**. Detalhes em `ATRIBUICOES_EXERCICIOS.md` e `TRADUCOES_E_LICENCA.md`.
-- O modelo generativo é fornecido por terceiro; Kiara é a identidade e integração do FitFATEC, não um modelo fundamental treinado pelo grupo.
-
-## 7. Entregáveis
-
-A situação por requisito, com evidência e pendências, está em `CHECKLIST_ENTREGA.md`; os fluxos de diálogo demonstrativos estão em `FLUXOS_CONVERSA.md`; premissas de precificação estão em `PRECIFICACAO.md`. Consulte também `PROJETO_STATUS.md` para riscos e testes.
+Consulte `README.md`, `CHECKLIST_ENTREGA.md`, `ATRIBUICOES_EXERCICIOS.md`
+e `TRADUCOES_E_LICENCA.md` para procedimentos, requisitos e atribuição das fontes.

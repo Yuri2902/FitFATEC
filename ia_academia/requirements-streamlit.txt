@@ -1,3 +1,0 @@
-# Opcional: versão antiga alternativa em Streamlit
--r requirements.txt
-streamlit

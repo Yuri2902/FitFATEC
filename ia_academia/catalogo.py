@@ -217,12 +217,3 @@ def texto_serie(nivel, objetivo):
         f"Treino principal — {s['principal']['foco']}:\n{_linhas(s['principal'])}\n\n"
         f"Treino secundário — {s['secundario']['foco']}:\n{_linhas(s['secundario'])}"
     )
-
-
-def classificar_nivel(meses_matricula, frequencia_semanal):
-    """Sugestão simples de nível de condicionamento (o aluno pode corrigir)."""
-    if meses_matricula < 3 or frequencia_semanal <= 2:
-        return "iniciante"
-    if meses_matricula < 12 or frequencia_semanal <= 4:
-        return "intermediário"
-    return "avançado"

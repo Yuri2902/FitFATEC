@@ -1,124 +1,62 @@
-FITFATEC — INSTALAÇÃO E EXECUÇÃO (CALENDÁRIO PESSOAL — INSTALAÇÃO LIMPA)
-=======================================================
+﻿FITFATEC — GUIA RÁPIDO PARA EXECUTAR (WINDOWS)
+=============================================
 
-IMPORTANTE: os comandos iniciais são executados na pasta FitFATEC, NÃO em ia_academia.
-Requisitos mínimos: Python 3.10+, MySQL 8, Windows PowerShell (scripts opcionais),
-internet apenas para instalar dependências/traduzir exercícios/usar Gemini.
+REQUISITOS
+- Python 3.10 ou superior; MySQL 8 ou superior; internet na primeira instalação.
+- Abra a pasta FitFATEC no VS Code. Execute os comandos no PowerShell,
+  na RAIZ do projeto (onde estão configurar.ps1 e iniciar.ps1).
 
-A) INSTALAÇÃO RÁPIDA NO WINDOWS
--------------------------------
-1. Abra FitFATEC no VS Code e abra um terminal PowerShell na pasta FitFATEC.
-2. Execute: .\configurar.ps1
-   Isso cria ia_academia/.venv, instala as bibliotecas e cria .env na raiz.
-   Se o modelo de demonstração não existir, gera/treina com dados sintéticos.
-3. Abra FitFATEC/.env, coloque seu usuário e senha do MySQL.
-   O script cria uma SECRET_KEY aleatória ao preparar o arquivo .env.
-   Se quiser IA, adicione GEMINI_API_KEY=... (opcional); não exponha essa chave.
-4. No MySQL Workbench, se o banco ainda NÃO existe, abra bdd/bd_fitfatec.sql
-   e execute UMA vez. Se o banco já existe, NÃO reaplique sem avaliar os dados.
-   O arquivo usa CREATE TABLE IF NOT EXISTS, o que NÃO corrige estruturas antigas.
-   Se tiver apenas dados de teste descartáveis, faça backup, apague o banco no
-   Workbench e execute o SQL oficial para criá-lo do zero.
-5. Execute: .\iniciar.ps1
-6. Abra: http://localhost:5000 (interface) e http://localhost:5000/conta (cadastro/login)
-   GET http://localhost:5000/health serve como verificação simples do Flask.
+1. PREPARAR O BANCO (SOMENTE NA PRIMEIRA INSTALAÇÃO)
+- Inicie o serviço MySQL e conecte-se pelo MySQL Workbench.
+- Se o banco fitfatec AINDA NÃO EXISTE, execute bdd/bd_fitfatec.sql.
+- Se o banco JÁ EXISTE, NÃO execute esse SQL novamente e NÃO recrie o banco:
+  suas contas e fichas podem estar nele. Alterações de estrutura exigem
+  backup e atualização específica; peça ajuda ao responsável pelo projeto.
 
-Para rodar testes: .\testar.ps1
-Se executar scripts .ps1 for bloqueado, use a alternativa abaixo sem mudar políticas.
+2. CONFIGURAR O PROJETO
+No PowerShell, na raiz:
 
-B) ALTERNATIVA SEM SCRIPTS / LINUX / MAC
------------------------------------------
-Na pasta raiz FitFATEC:
+    Set-ExecutionPolicy -Scope Process Bypass
+    .\configurar.ps1
 
-    python -m venv ia_academia/.venv
+O script instala as dependências em ia_academia/.venv e cria um arquivo
+.env na raiz, caso ainda não exista. Ele não sobrescreve um .env existente.
+Abra o .env e confira:
 
-Windows PowerShell, sem precisar ativar:
-    ia_academia\.venv\Scripts\python.exe -m pip install -r ia_academia\requirements.txt
+    DB_HOST=localhost
+    DB_NAME=fitfatec
+    DB_USER=root
+    DB_PASSWORD=SUA_SENHA_REAL_DO_MYSQL
+    GEMINI_API_KEY=SUA_CHAVE_GEMINI  (opcional)
 
-Linux/Mac:
-    ia_academia/.venv/bin/python -m pip install -r ia_academia/requirements.txt
+Use os valores reais do seu computador. O script gera automaticamente
+uma SECRET_KEY para um .env novo. Nunca envie o .env ao GitHub ou ao grupo.
+Sem chave Gemini, os recursos da Kiara ficam mais limitados.
 
-Copie .env.example para .env na raiz e substitua os valores COLOQUE_... .
-Crie a SECRET_KEY com:
-    python -c "import secrets; print(secrets.token_hex(32))"
+3. INICIAR O FITFATEC
+No mesmo terminal, na raiz:
 
-No Workbench, importe bdd/bd_fitfatec.sql apenas se necessário.
+    .\iniciar.ps1
 
-Se o arquivo ia_academia/modelo_evasao.pkl não existir, execute com o Python
-do ambiente virtual:
-    cd ia_academia
-    python gerar_dados.py
-    python treinar_modelo.py
-    python servidor.py
+Abra http://localhost:5000 no navegador.
+Mantenha o terminal aberto enquanto usa o sistema; Ctrl+C encerra o Flask.
+Nas próximas vezes, com tudo configurado, basta iniciar o MySQL e rodar
+.\iniciar.ps1. Não é necessário reinstalar o projeto a cada execução.
 
-Se o modelo já existir, basta iniciar 'python servidor.py' dentro de ia_academia.
-No Windows você também pode usar o Python do ambiente por caminho completo
-sem executar o activate. A variável .env é lida automaticamente pelo servidor.
+4. TESTES (OPCIONAL)
 
-C) DEPOIS DA INSTALAÇÃO
------------------------
-No Windows: .\iniciar.ps1, na raiz, e visite http://localhost:5000.
-Matrícula é gerada no cadastro e lida pela sessão de login; não deve ser digitada
-para programar treinos no calendário. A página /teste-auth continua funcionando como alias antigo
-de /conta para preservar favoritos.
+    .\testar.ps1
 
-D) BIBLIOTECA / GEMINI (OPCIONAIS)
-----------------------------------
-Já existe um dataset MIT de exercícios em ia_academia/dados/exercicios_mit.json.
-Também existe uma pequena seleção de nomes traduzidos. Para preencher MAIS
-traduções, configure GEMINI_API_KEY no .env e, na pasta ia_academia, rode:
+Os testes automatizados não substituem verificar login, Kiara,
+treinos e calendário com o MySQL do seu computador.
 
-    python traduzir_exercicios.py
-    python traduzir_exercicios.py --conferir
+5. SE ALGO DER ERRADO
+- Login ou cadastro falha: confira se o MySQL está ligado e se DB_USER,
+  DB_PASSWORD e DB_NAME estão corretos no .env; reinicie o Flask.
+- ModuleNotFoundError: execute .\configurar.ps1 novamente na raiz.
+- Script bloqueado pelo PowerShell: execute o comando Set-ExecutionPolicy
+  da etapa 2 no terminal atual.
+- Página antiga: pressione Ctrl+F5 no navegador.
 
-Isso consome chamadas à API; pode ser interrompido e retomado. O arquivo
-'ia_academia/dados/revisao_traducoes.csv' precisa de revisão humana, especialmente
-para movimentos pouco comuns. Os nomes originais ficam ligados aos mesmos IDs.
-Para baixar novamente os metadados da fonte permitida, use:
-    python importar_exercicios_mit.py
-Mantenha os arquivos de licença e NOTICE do dataset. Não baixe imagens/GIFs.
-
-E) TESTES
----------
-Na pasta raiz (Windows): .\testar.ps1
-Na pasta ia_academia (com venv ativado):
-    python -m unittest discover -s tests -p "test_*.py" -v
-
-Testes usam mocks para serviços externos, mas dependem das bibliotecas Python.
-Eles NÃO substituem testes reais com MySQL e com Gemini.
-
-F) SOLUÇÃO RÁPIDA DE PROBLEMAS
-------------------------------
-- requirements.txt não encontrado: você está na pasta errada. Use instalar pela raiz
-  como em (A), ou entre em ia_academia antes de 'pip install -r requirements.txt'.
-- 'No such file or directory: traduzir_exercicios.py': entre em ia_academia.
-- 'Access denied' no MySQL: confira DB_USER/DB_PASSWORD no .env, serviço ativo
-  e privilégios no banco fitfatec.
-- 'Table already exists': não execute o SQL de criação novamente em banco existente.
-- Flask sem rota ou sem CSS após alteração: reinicie o servidor e pressione Ctrl+F5.
-- Kiara em modo offline: confira GEMINI_API_KEY no .env, internet, modelo e cotas da API.
-- 'ModuleNotFoundError': repita .\configurar.ps1; não use Python global por engano.
-- 'InconsistentVersionWarning' em modelo_evasao.pkl: copie seu modelo como backup
-  e, com o venv ativo em ia_academia, execute gerar_dados.py e treinar_modelo.py
-  para recriar SOMENTE o modelo sintético com a versão local do scikit-learn.
-- Arquivos antigos em venv/, .git/ e __pycache__/ NÃO devem ser copiados
-  do computador de outra pessoa; são locais e recriáveis.
-
-G) OBSERVAÇÕES
--------------
-- O app.py é um protótipo alternativo Streamlit; não é necessário para Flask.
-  Para utilizá-lo, instale 'pip install -r requirements-streamlit.txt' e execute
-  'streamlit run app.py' a partir de ia_academia.
-- FLASK_DEBUG=1 apenas no desenvolvimento; nunca em produção.
-- Um servidor Flask local não é hospedagem de produção nem substitui segurança
-  de deploy. O banco MySQL e o calendário exigem testes reais de integração.
-- Não versionar .env, API keys, credenciais nem arquivos locais de usuário.
-
-H) FLUXO DO CALENDÁRIO PESSOAL
---------------------------------
-1. Crie a conta e salve um treino em Meus treinos.
-2. Abra Agendamentos; selecione data, ficha salva e horário opcional.
-3. O compromisso aparece no calendário e no painel inicial.
-4. Excluir agendamento NÃO apaga a ficha salva.
-5. Concluir agendamento registra execução e preserva a ficha.
-Não há vagas, aulas físicas, professores ou grade de horários.
+Para detalhes de instalação, banco existente e funcionamento, leia o README.md
+na raiz do projeto.

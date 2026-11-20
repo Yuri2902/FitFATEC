@@ -40,6 +40,17 @@ class TestCadastro(unittest.TestCase):
         self.assertEqual(resp.get_json()["mensagem"], "Cadastro realizado com sucesso.")
         mock_salvar.assert_called_once_with("João Silva", "joao@email.com", unittest.mock.ANY)
 
+    @patch("servidor.get_db_connection")
+    def test_insert_cadastro_sem_papel(self, mock_conexao):
+        from servidor import salvar_aluno_no_banco
+        cursor = mock_conexao.return_value.cursor.return_value
+        cursor.fetchone.return_value = None
+        cursor.lastrowid = 17
+        self.assertEqual(salvar_aluno_no_banco("Ana", "ana@email.com", "hash"), 17)
+        consultas = [call.args[0] for call in cursor.execute.call_args_list]
+        insert = next(sql for sql in consultas if "INSERT INTO aluno" in sql)
+        self.assertNotIn("papel", insert.lower())
+
     @patch("servidor.salvar_aluno_no_banco")
     def test_cadastro_email_duplicado(self, mock_salvar):
         mock_salvar.side_effect = ValueError("E-mail já cadastrado.")

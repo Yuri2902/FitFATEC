@@ -13,13 +13,12 @@ __pycache__/
 .mypy_cache/
 .vscode/.ropeproject
 
-# Dados e modelo sintéticos reproduzíveis (gerados localmente)
-ia_academia/modelo_evasao.pkl
-ia_academia/dados/alunos.csv
-
 # Temporários, logs e backup
 *.log
 *.tmp
 *.bak
 *.zip
 .DS_Store
+
+# Avatares enviados pelos usuarios: preservar localmente, nao enviar ao GitHub
+/public/uploads/avatars/

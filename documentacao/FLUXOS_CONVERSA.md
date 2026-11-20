@@ -1,52 +1,54 @@
-# FitFATEC — Fluxos de conversação (exemplos para documentação)
+# FitFATEC — Fluxos de conversa e uso (roteiros de teste)
 
-**Nota:** estes seis roteiros representam o comportamento esperado do produto; não são transcrições literais de testes no Gemini. Para validar, executar na interface e registrar as evidências da versão apresentada.
+Estes exemplos descrevem **o comportamento esperado** do protótipo, e não transcrições verificadas de conversas com a Kiara. Cada fluxo deve ser testado na versão a apresentar; registrar eventuais falhas e não assumir que toda resposta é gerada pelo Gemini.
 
-## Fluxo 1 — Pedir treino por grupo muscular
+## Fluxo 1 — Primeira conversa e preferências
 
-1. Aluno autenticado: "Quero um treino de bíceps sem halteres."
-2. Kiara: identifica bíceps, aplica restrição de equipamento e oferece opções compatíveis do catálogo em português.
-3. Aluno: "Qual o primeiro exercício?"
-4. Kiara: explica o exercício selecionado; quando necessário, orienta obter ajuda profissional.
+1. O aluno entra com sua conta.
+2. Confere as informações de treino no **Meu perfil** e a personalidade da Kiara em **Configurações**.
+3. Abre o chat e pede: “Quero começar com exercícios leves, sem equipamentos”.
+4. Verifica se a Kiara considera o nível e as restrições informadas, sem exigir que a matrícula seja digitada na conversa.
 
-## Fluxo 2 — Montar treino combinado
+## Fluxo 2 — Criar e guardar uma ficha individual
 
-1. Aluno: "Quero um treino de bíceps sem halteres."
-2. Kiara: oferece exercícios compatíveis.
-3. Aluno: "Agora quero pernas sem máquinas."
-4. Kiara: monta parte de pernas respeitando as novas limitações.
-5. Aluno: "Combine os dois."
-6. Kiara: recupera os grupos, descarta exercícios com equipamento proibido, evita duplicados e informa limitações.
+1. Aluno: “Monte um treino individual de pernas, sem máquinas”.
+2. Kiara: apresenta exercícios com séries, repetições e descanso adequados à solicitação, quando o fluxo de geração permitir.
+3. O aluno confere a proposta e **confirma o salvamento**.
+4. Em **Meus treinos**, verifica se a ficha foi registrada e se seus exercícios continuam disponíveis após recarregar a página.
 
-## Fluxo 3 — Substituir exercício mantendo a série
+## Fluxo 3 — Criar e consultar um plano semanal
 
-1. Aluno: "Substitua um exercício sem repetir os outros."
-2. Kiara: seleciona alternativa do catálogo e preserva os demais itens do plano temporário.
-3. Aluno: "Mostre o treino completo atualizado."
-4. Kiara: retorna o conjunto atual com a substituição registrada na sessão.
+1. Aluno: “Quero um plano semanal com três dias de treino”.
+2. Kiara e interface oferecem uma proposta de divisão semanal.
+3. O aluno confere os dias e as fichas e confirma o salvamento.
+4. Em **Meus treinos**, abre o plano e verifica suas fichas agrupadas.
 
-## Fluxo 4 — Aquecimento
+## Fluxo 4 — Revisar uma ficha existente
 
-1. Aluno: "Que aquecimento posso fazer antes do treino?"
-2. Kiara: explica opções de aquecimento segundo nível e objetivo, indicando que a proposta é demonstrativa.
-3. Aluno: "Preciso de algo mais leve."
-4. Kiara: adapta a explicação sem exigir matrícula na conversa.
+1. Em **Meus treinos**, o aluno escolhe uma ficha e usa o ícone **Editar com a Kiara**.
+2. Confere se a conversa recebe **a ficha correta, com os exercícios atuais**.
+3. Aluno: “Troque apenas o primeiro exercício por uma alternativa sem equipamento; mantenha os demais”.
+4. Verifica se a proposta preserva os outros exercícios e **não sobrescreve a ficha antes da confirmação**.
+5. Confirma as alterações, se estiverem corretas, e reabre a ficha para conferir o resultado.
 
-## Fluxo 5 — Treino principal, secundário e nível
+> **Teste obrigatório:** a passagem do contexto da ficha e a confirmação de alterações precisam ser verificadas na aplicação real.
 
-1. Aluno: "Qual o meu nível de condicionamento?"
-2. Kiara: explica os critérios aproximados baseados nos dados informados, sem tratar como avaliação clínica.
-3. Aluno: "Qual a diferença entre treino principal e secundário?"
-4. Kiara: explica a divisão e oferece exemplos.
+## Fluxo 5 — Agendar uma ficha e repetir por dias escolhidos
 
-## Fluxo 6 — Agendar horário
+1. Em **Agendamentos**, o aluno seleciona uma ficha **já salva**; os treinos individuais aparecem antes das fichas agrupadas por plano.
+2. Escolhe a data inicial e, se desejar repetição, os dias da semana (por exemplo, terça e quinta).
+3. Salva e confere as ocorrências no calendário.
+4. Cancela uma ocorrência de teste e verifica se a ficha continua em **Meus treinos** e se as outras repetições permanecem.
 
-1. Aluno entra com e-mail e senha na página `/conta`.
-2. Aluno: "Quero agendar uma aula."
-3. Kiara: orienta a usar o botão **Agendar aula**.
-4. Aluno escolhe data, horário e modalidade; a matrícula vem automaticamente da sessão.
-5. Servidor verifica capacidade e grava agendamento no MySQL; a tela informa sucesso ou motivo de recusa.
+**Nota:** não há reserva de vagas, lotação ou aulas presenciais; trata-se de um calendário pessoal de treinos.
 
-## Critérios de qualidade da demonstração
+## Fluxo 6 — Encerrar sessão sem apagar treinos
 
-Verificar: nomes de exercícios só em pt-BR, restrições preservadas, contexto do plano, indicadores IA/offline coerentes, nenhuma solicitação de matrícula no chat, agendamento autenticado e ausência de duplicação após substituições. Faça testes manuais e registre o que falhou, em vez de afirmar conformidade por causa do roteiro.
+1. O aluno troca mensagens com a Kiara.
+2. Atualiza a página e confirma que a conversa ainda está disponível na sessão ativa.
+3. Usa **Sair**, faz login novamente e verifica que o chat abriu sem a conversa anterior.
+4. Confere que perfil, fichas, planos e agendamentos continuam salvos.
+
+## Como registrar a validação
+
+Para cada fluxo, anotar **data, resultado (passou/falhou), evidência e erro observado**, se houver. As respostas do modelo podem variar; validar o comportamento e a persistência dos dados, não apenas a redação da resposta.

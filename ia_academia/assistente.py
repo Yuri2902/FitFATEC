@@ -2,14 +2,15 @@
 Variáveis de ambiente:
     GEMINI_API_KEY  chave da API do Gemini (opcional)
     GEMINI_MODEL    modelo a usar (padrão: gemini-3.5-flash-lite)
+    GEMINI_TIMEOUT_MS      limite HTTP por tentativa (padrão: 20000 ms)
+    GEMINI_MAX_ATTEMPTS    tentativas no total, incluindo a primeira (padrão: 2)
 """
 import os
 import configuracao  # prepara GEMINI_API_KEY a partir do .env, se existir
 import re
 import logging
+from time import perf_counter
 import unicodedata
-import joblib
-import pandas as pd
 
 import catalogo
 import biblioteca_exercicios
@@ -23,32 +24,53 @@ logger = logging.getLogger(__name__)
 API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 MODELO_GEMINI = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
+def _configuracao_inteira(nome: str, padrao: int, minimo: int, maximo: int) -> int:
+    """Lê limite opcional sem impedir o funcionamento por valor inválido no .env."""
+    try:
+        return min(max(int(os.environ.get(nome, str(padrao))), minimo), maximo)
+    except (TypeError, ValueError):
+        logger.warning("Configuração %s inválida; usando o padrão %s.", nome, padrao)
+        return padrao
+
+
+# Não muda prompts, histórico ou modelo: limita somente espera e retries HTTP.
+# attempts inclui a tentativa inicial; 2 = 1 nova tentativa em erros temporários.
+GEMINI_TIMEOUT_MS = _configuracao_inteira("GEMINI_TIMEOUT_MS", 20000, 5000, 120000)
+GEMINI_MAX_ATTEMPTS = _configuracao_inteira("GEMINI_MAX_ATTEMPTS", 2, 1, 5)
+
+
+def _opcoes_http_gemini(tipos):
+    """As opções são nativas do google-genai (timeout em MILISSEGUNDOS)."""
+    retries = tipos.HttpRetryOptions(
+        attempts=GEMINI_MAX_ATTEMPTS,
+        initial_delay=1.0,
+        max_delay=2.0,
+        http_status_codes=[408, 429, 500, 502, 503, 504],
+    )
+    return tipos.HttpOptions(
+        timeout=GEMINI_TIMEOUT_MS,
+        retry_options=retries,
+    )
+
+
 client = None
 _types = None
 if API_KEY:
     try:
         from google import genai
         from google.genai import types as _types
-        client = genai.Client(api_key=API_KEY)
+        # Compatibilidade: SDKs antigos podem não ter HttpRetryOptions.
+        if hasattr(_types, "HttpRetryOptions"):
+            client = genai.Client(api_key=API_KEY, http_options=_opcoes_http_gemini(_types))
+            logger.info("Gemini: timeout HTTP por tentativa=%d ms; tentativas=%d.",
+                        GEMINI_TIMEOUT_MS, GEMINI_MAX_ATTEMPTS)
+        else:
+            client = genai.Client(api_key=API_KEY)
+            logger.warning("SDK google-genai antigo: limite de tentativas não configurável. "
+                           "Atualize google-genai para ativar a proteção de tempo.")
     except ImportError:  # pacote google-genai não instalado
         logger.warning("Chave Gemini encontrada, mas google-genai não está instalado; usando modo offline.")
         client = None
-
-#  Modelo ML(machine learning)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "modelo_evasao.pkl")
-modelo = joblib.load(MODEL_PATH)
-
-
-def risco_de_desistir(aluno: dict) -> float:
-    dados = pd.DataFrame([{
-        "idade": aluno["idade"],
-        "frequencia_semanal": aluno["frequencia_semanal"],
-        "meses_matricula": aluno["meses_matricula"],
-        "faltas_ultimo_mes": aluno["faltas_ultimo_mes"],
-    }])
-    return float(modelo.predict_proba(dados)[0][1])
-
 
 #Persona(ela ta com essa personalidade por conta dos critério)
 PERSONA = """\
@@ -96,11 +118,11 @@ ATENDIMENTO E CONTEXTO:
 - Para sugestões de treino, use séries, repetições e descansos como referências
   ajustáveis. Não descreva uma ficha gerada como avaliação profissional individual.
 - O aluno já está autenticado: nunca solicite matrícula, senha ou dados de login.
-  Para agendar, oriente a usar o botão "Agendar aula" do painel. Não afirme ter
+  Para agendar, oriente a usar a página "Agendamentos". Não afirme ter
   agendado, salvo ou alterado treinos no banco apenas por conversar sobre eles.
 - Explique nível de treinamento de modo aproximado, sem tratá-lo como diagnóstico.
-  Se perguntarem sobre fadiga ou desistência, responda com sensibilidade sem citar
-  probabilidades de risco ou conclusões clínicas.
+  Se perguntarem sobre cansaço ou motivação, responda com sensibilidade e
+  sugestões práticas, sem conclusões clínicas.
 
 SEGURANÇA E ESCOPO:
 - Não dê diagnósticos, prescrição medicamentosa nem planos clínicos. Se houver
@@ -108,7 +130,6 @@ SEGURANÇA E ESCOPO:
   por profissional qualificado e adaptações gerais seguras quando apropriadas.
 - Para dúvidas pessoais complexas de dieta, lesões ou treinamento especializado,
   deixe claros os limites da orientação geral e quando procurar um profissional.
-- Não apresente estimativas de risco de desistência como certeza ou diagnóstico.
 - Mantenha o foco em academia, músculos, exercícios e bem-estar ligado ao treino.
   Para temas alheios, redirecione gentilmente ao assunto da FitFATEC.
 - Responda sempre em português brasileiro, sem incluir traduções em inglês.
@@ -227,7 +248,7 @@ def _metadados_exercicio_mencionado(historico: list, limite: int = 3) -> list[st
     return encontrados
 
 
-def _instrucoes(aluno: dict, risco: float, historico: list | None = None) -> str:
+def _instrucoes(aluno: dict, historico: list | None = None) -> str:
     """Gemini responde; catálogo local fornece evidências pontuais e filtradas."""
     historico = historico or []
     ultima = _ultima(historico, "user")
@@ -279,8 +300,6 @@ CONTEXTO DO ALUNO (campos da tela podem estar desatualizados):
 - Idade: {aluno['idade']} | Objetivo: {aluno['objetivo']} | Nível: {aluno['nivel']}
 - Frequência informada: {aluno['frequencia_semanal']}x por semana
 - Duração preferida: {aluno.get('minutos_por_sessao') or 'não definida'} minutos por sessão (quando definida)
-- Meses de matrícula: {aluno['meses_matricula']}
-- Risco interno estimado (NÃO mencionar ao aluno): {risco:.0%}
 
 RESTRIÇÕES ATIVAS:
 {restricoes}
@@ -331,13 +350,11 @@ def _contem(texto, palavras):
     return any(p in texto for p in palavras)
 
 
-def responder_offline(aluno: dict, historico: list, risco: float) -> str:
+def responder_offline(aluno: dict, historico: list) -> str:
     """Respostas baseadas em regras, usadas quando não há chave do Gemini."""
     texto = _ultima(historico, "user").lower().strip()
     anterior = _ultima(historico, "assistant").lower()
     nivel, objetivo = aluno["nivel"], aluno["objetivo"]
-    leve = risco > 0.6
-    prefixo = "Estou aqui com você, sem pressa. " if leve else ""
 
     if _contem(texto, ["agend", "marcar", "programar", "horário", "horario", "reservar"]):
         return ("Vamos agendar! Sua conta já está identificada. "
@@ -361,10 +378,8 @@ def responder_offline(aluno: dict, historico: list, risco: float) -> str:
                 f"Treino secundário — {s['secundario']['foco']}:\n{catalogo._linhas(s['secundario'])}")
 
     if _contem(texto, ["nível", "nivel", "condicionamento físico", "iniciante", "avançado", "intermediário"]):
-        sugerido = catalogo.classificar_nivel(aluno["meses_matricula"], aluno["frequencia_semanal"])
-        return (f"Pelos seus dados (matrícula há {aluno['meses_matricula']} meses e "
-                f"{aluno['frequencia_semanal']}x por semana), eu sugiro o nível {sugerido}. "
-                f"Hoje você está como {nivel}. Para mudar, ajuste o campo \"Nível\" no painel.")
+        return (f"Seu nível registrado é {nivel}. Para ajustá-lo, abra Meu perfil e "
+                "altere o campo Nível conforme sua experiência com exercícios.")
 
     if _contem(texto, ["série", "serie", "treino", "exercício", "exercicio", "condicionamento"]):
         if _contem(texto, ["outro", "outra", "diferente", "alternativ", "variar"]):
@@ -381,10 +396,10 @@ def responder_offline(aluno: dict, historico: list, risco: float) -> str:
     if _contem(texto, ["falta", "desanim", "sem tempo", "cansad", "preguiça", "desist"]):
         return ("Acontece com todo mundo, e voltar é o que importa! 💪 "
                 "Que tal um treino de 20 minutos hoje? Aquecimento leve e só o treino principal. "
-                "Se preferir, agende uma aula com um instrutor para ter companhia.")
+                "Se preferir, procure orientação de um profissional de educação física.")
 
     if _contem(texto, ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite"]):
-        return ("Oi! Eu sou a Kiara, assistente da FitFATEC. 🐆 Posso agendar sua aula, "
+        return ("Oi! Eu sou a Kiara, assistente da FitFATEC. 🐆 Posso ajudar a programar seus treinos, "
                 "montar sua série, explicar o aquecimento e os treinos principal e secundário. "
                 "O que você precisa?")
 
@@ -461,10 +476,9 @@ def _portugues_na_resposta(texto: str) -> str:
 def responder_com_modo(aluno: dict, historico: list) -> tuple[str, str]:
     if not historico:
         return "Erro: nenhuma mensagem foi enviada.", "offline"
-    risco = risco_de_desistir(aluno)
 
     if client is None:
-        return responder_offline(aluno, historico, risco), "offline"
+        return responder_offline(aluno, historico), "offline"
 
     conteudo = [
         _types.Content(
@@ -474,31 +488,45 @@ def responder_com_modo(aluno: dict, historico: list) -> tuple[str, str]:
         for m in historico if m.get("role") in ("user", "assistant")
     ]
     try:
-        resposta = client.models.generate_content(
-            model=MODELO_GEMINI,
-            contents=conteudo,
-            config=_types.GenerateContentConfig(
-                system_instruction=_instrucoes(aluno, risco, historico),
-                temperature=0.6,
-                max_output_tokens=800,
-            ),
-        )
+        _inicio_prompt = perf_counter()
+        instrucoes = _instrucoes(aluno, historico)
+        print(f"[Kiara][tempos IA] preparar_prompt={perf_counter() - _inicio_prompt:.3f}s", flush=True)
+        _inicio_gemini = perf_counter()
+        try:
+            resposta = client.models.generate_content(
+                model=MODELO_GEMINI,
+                contents=conteudo,
+                config=_types.GenerateContentConfig(
+                    system_instruction=instrucoes,
+                    temperature=0.6,
+                    max_output_tokens=800,
+                ),
+            )
+        finally:
+            print(f"[Kiara][tempos IA] gemini_chamada_1={perf_counter() - _inicio_gemini:.3f}s", flush=True)
         if resposta.text and resposta.text.strip():
             texto = resposta.text.strip()
             if not _validar_substituicao(historico, texto):
                 logger.info("Primeira substituição não preservou o plano: solicitando correção ao modelo")
-                nova = client.models.generate_content(
-                    model=MODELO_GEMINI,
-                    contents=conteudo,
-                    config=_types.GenerateContentConfig(
-                        system_instruction=_instrucoes(aluno, risco, historico)
-                        + "\nATENÇÃO: no pedido atual, preserve todos os exercícios não substituídos "
-                          "e a quantidade original de itens. Acrescente UMA alternativa inédita. "
-                          "Escreva linhas no padrão '- Exercício: 2x10 (descanso 60s)'.",
-                        temperature=0.15,
-                        max_output_tokens=800,
-                    ),
-                )
+                _inicio_prompt_2 = perf_counter()
+                instrucoes_correcao = _instrucoes(aluno, historico)
+                print(f"[Kiara][tempos IA] preparar_prompt_correcao={perf_counter() - _inicio_prompt_2:.3f}s", flush=True)
+                _inicio_gemini_2 = perf_counter()
+                try:
+                    nova = client.models.generate_content(
+                        model=MODELO_GEMINI,
+                        contents=conteudo,
+                        config=_types.GenerateContentConfig(
+                            system_instruction=instrucoes_correcao
+                            + "\nATENÇÃO: no pedido atual, preserve todos os exercícios não substituídos "
+                              "e a quantidade original de itens. Acrescente UMA alternativa inédita. "
+                              "Escreva linhas no padrão '- Exercício: 2x10 (descanso 60s)'.",
+                            temperature=0.15,
+                            max_output_tokens=800,
+                        ),
+                    )
+                finally:
+                    print(f"[Kiara][tempos IA] gemini_chamada_2={perf_counter() - _inicio_gemini_2:.3f}s", flush=True)
                 if not nova.text or not _validar_substituicao(historico, nova.text):
                     return ("Não consegui garantir uma substituição sem remover outros "
                             "exercícios ou repetir um já existente. Peça ao instrutor "
@@ -511,7 +539,7 @@ def responder_com_modo(aluno: dict, historico: list) -> tuple[str, str]:
         codigo = getattr(erro, "status_code", None) or getattr(erro, "code", None)
         logger.warning("Falha no Gemini (%s; código=%s). Usando modo offline.",
                        type(erro).__name__, codigo or "desconhecido")
-    return responder_offline(aluno, historico, risco), "offline"
+    return responder_offline(aluno, historico), "offline"
 
 
 def _pergunta_treino_salvo(mensagem: str) -> bool:
@@ -566,6 +594,6 @@ def responder(aluno: dict, historico: list):
 
 if __name__ == "__main__":
     aluno = {"idade": 25, "objetivo": "ganhar massa muscular", "nivel": "iniciante",
-             "frequencia_semanal": 2, "meses_matricula": 3, "faltas_ultimo_mes": 8}
+             "frequencia_semanal": 2}
     print("Modo:", "Gemini" if client else "offline")
     print(responder(aluno, [{"role": "user", "content": "Quero uma série de condicionamento"}]))

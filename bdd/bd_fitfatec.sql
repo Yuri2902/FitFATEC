@@ -14,11 +14,7 @@ CREATE TABLE IF NOT EXISTS aluno (
     data_nascimento DATE,
     objetivo VARCHAR(30),
     nivel VARCHAR(15),
-    data_matricula DATE,
-    desistiu BOOLEAN NOT NULL DEFAULT FALSE,
-    data_desistencia DATE,
     senha_hash VARCHAR(255),
-    papel ENUM('aluno','instrutor','admin') NOT NULL DEFAULT 'aluno',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
     telefone VARCHAR(20),
@@ -33,14 +29,6 @@ CREATE TABLE IF NOT EXISTS aluno (
     token_recuperacao VARCHAR(255),
     token_expiracao DATETIME
 );
-
-CREATE TABLE IF NOT EXISTS exercicio (
-    id_exercicio INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL UNIQUE,
-    grupo_muscular VARCHAR(40) NOT NULL,
-    nivel VARCHAR(15) NOT NULL
-);
-
 
 -- Um plano é um agrupador de fichas. Treinos individuais não têm plano_id.
 CREATE TABLE IF NOT EXISTS plano_treino (
@@ -78,13 +66,11 @@ CREATE TABLE IF NOT EXISTS treinos (
     INDEX idx_treinos_semana (aluno_id, dia_semana, ativo)
 );
 
--- exercicio_id = código TEXTO do catálogo externo MIT; id_exercicio =
--- id NUMÉRICO do catálogo local, opcional. São identificadores distintos.
+-- exercicio_id guarda o identificador TEXTO do catálogo externo.
 CREATE TABLE IF NOT EXISTS treino_exercicios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     treino_id INT NOT NULL,
     exercicio_id VARCHAR(100),
-    id_exercicio INT,
     nome_exercicio VARCHAR(150) NOT NULL,
     grupo_muscular VARCHAR(80),
     series INT NOT NULL DEFAULT 3,
@@ -94,8 +80,6 @@ CREATE TABLE IF NOT EXISTS treino_exercicios (
     etapa VARCHAR(20),
     CONSTRAINT fk_itens_treino FOREIGN KEY (treino_id)
         REFERENCES treinos(id) ON DELETE CASCADE,
-    CONSTRAINT fk_itens_exercicio_local FOREIGN KEY (id_exercicio)
-        REFERENCES exercicio(id_exercicio) ON DELETE SET NULL,
     INDEX idx_itens_ordem (treino_id, ordem)
 );
 
@@ -151,16 +135,6 @@ CREATE TABLE IF NOT EXISTS treino_recorrencia_excecao (
     status ENUM('cancelado','concluido') NOT NULL,
     PRIMARY KEY (recorrencia_id, data_treino),
     CONSTRAINT fk_excecao_rec FOREIGN KEY (recorrencia_id) REFERENCES treino_recorrencia(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS frequencia (
-    id_frequencia INT AUTO_INCREMENT PRIMARY KEY,
-    id_aluno INT NOT NULL,
-    data_registro DATE NOT NULL,
-    status ENUM('presente','ausente','justificado') NOT NULL DEFAULT 'presente',
-    CONSTRAINT fk_frequencia_aluno FOREIGN KEY (id_aluno)
-        REFERENCES aluno(id_aluno) ON DELETE CASCADE,
-    UNIQUE KEY uq_frequencia_aluno_data (id_aluno, data_registro)
 );
 
 CREATE TABLE IF NOT EXISTS chat_mensagens (

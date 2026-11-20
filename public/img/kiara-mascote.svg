@@ -1,5 +1,0 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="100" cy="100" r="90" fill="#FFCF9A"/>
-  <path d="M100 50 C 70 50, 50 70, 50 100 C 50 130, 70 150, 100 150 C 130 150, 150 130, 150 100 C 150 70, 130 50, 100 50 Z" fill="#FF8A3D"/>
-  <text x="100" y="110" font-family="Arial" font-size="40" text-anchor="middle" fill="#1B1B1D">🐆</text>
-</svg>
