@@ -224,7 +224,7 @@
 .kiara-dias-semana small { display: block; font-size: .75rem; }
 
 
-/* Controles de fala da Kiara (SpeechSynthesis nativo do navegador). */
+/* Controles da voz neural local da Kiara (Kokoro TTS). */
 .kiara-voice-controls {
   display: inline-flex;
   align-items: center;
@@ -234,9 +234,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 6px 10px;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 6px;
   border: 1px solid var(--borda-forte);
   border-radius: 9px;
   background: var(--bg-input);
@@ -253,8 +254,15 @@
 .kiara-voice-btn.voz-ativa { color: var(--accent-primary); }
 .kiara-voice-btn:disabled { opacity: .45; cursor: not-allowed; }
 .kiara-voice-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
-.kiara-voice-stop { width: 34px; padding: 6px; }
+.kiara-voice-stop { width: 40px; padding: 6px; }
 @media (max-width: 760px) {
   .informacoes-kiara { align-items: flex-start; gap: 10px; flex-wrap: wrap; }
   .kiara-header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+}
+
+@media (max-width: 520px) {
+  #formChat { gap: 7px; padding: 10px; }
+  #formChat #pergunta { min-width: 0; padding: 10px; }
+  #formChat .kiara-voice-btn { width: 36px; height: 36px; min-height: 36px; }
+  #formChat #enviar { padding: 10px 12px; }
 }

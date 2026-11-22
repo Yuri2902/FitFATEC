@@ -2,12 +2,12 @@
 
 Aplicação web acadêmica para **criar, organizar e acompanhar treinos pessoais**, com a assistente virtual **Kiara**, biblioteca de exercícios e calendário de agendamentos.
 
-**Tecnologias:** Python (Flask), MySQL 8+, HTML, CSS e JavaScript. A Kiara utiliza a API do Google Gemini quando configurada; sem a API, o projeto dispõe de respostas locais com recursos mais limitados.
+**Tecnologias:** Python (Flask), MySQL 8+, HTML, CSS e JavaScript. A Kiara utiliza a API do Google Gemini quando configurada; sem a API, o projeto dispõe de respostas locais com recursos mais limitados. A fala da Kiara é sintetizada localmente pelo Kokoro TTS (voz brasileira `pf_dora`), sem serviço externo durante a reprodução.
 
 ## Funcionalidades
 
 - **Conta:** cadastro, login por e-mail ou matrícula, perfil e recuperação de senha.
-- **Kiara:** conversa, avaliação inicial, personalidades configuráveis e apoio à criação de treinos.
+- **Kiara:** conversa, avaliação inicial, personalidades configuráveis, apoio à criação de treinos e voz neural local em português brasileiro.
 - **Meus treinos:** fichas individuais, planos semanais, prévia antes de salvar, cores por ficha/plano, exercícios com séries, repetições e descansos, registro de conclusão e arquivamento.
 - **Agendamentos:** calendário pessoal, programação de fichas e planos, repetição nos dias da semana escolhidos, cancelamento de ocorrências e interrupção de repetições.
 - **Meu perfil e Configurações:** dados pessoais e preferências de treino no perfil; tema, acessibilidade, notificações e personalidade da Kiara nas configurações.
@@ -18,11 +18,11 @@ O chat inicia uma conversa nova a cada login; atualizar a página durante a mesm
 
 ## Requisitos
 
-- **Python 3.10 ou superior**;
+- **Python 3.10 a 3.13** (o motor Kokoro ONNX ainda não oferece suporte a Python 3.14);
 - **MySQL 8 ou superior** (MySQL Workbench é opcional, mas facilita a configuração);
 - **Git** para clonar e atualizar o repositório;
 - **Windows com PowerShell** para os scripts `.ps1` abaixo. Outros sistemas podem executar o backend manualmente.
-- Conexão com a internet para instalar dependências e utilizar o Gemini.
+- Conexão com a internet durante a instalação para instalar dependências e baixar os modelos de voz (aprox. 142 MB); o Gemini também exige internet durante o uso online.
 
 ## Instalação do zero (Windows)
 
@@ -46,7 +46,7 @@ O chat inicia uma conversa nova a cada login; atualizar a página durante a mesm
    .\configurar.ps1
    ```
 
-   Esse script instala as dependências em **`ia_academia/.venv`** e, se não existir, cria **`.env` na raiz** a partir de `.env.example`, com uma `SECRET_KEY` aleatória. Um `.env` existente **não é sobrescrito**.
+   Esse script instala as dependências em **`ia_academia/.venv`**, baixa os arquivos do Kokoro para `ia_academia/modelos/kiara_voz/` e, se não existir, cria **`.env` na raiz** a partir de `.env.example`, com uma `SECRET_KEY` aleatória. O download dos modelos é feito apenas uma vez; um `.env` existente **não é sobrescrito**.
 
 4. Abra o `.env` e confira suas configurações (exemplo **sem credenciais reais**):
 
@@ -74,6 +74,14 @@ O chat inicia uma conversa nova a cada login; atualizar a página durante a mesm
    A rota **http://localhost:5000/health** verifica se o Flask está respondendo, **não** se o MySQL está conectado.
 
 **Nas próximas execuções:** com Python, MySQL e `.env` já configurados, normalmente basta iniciar o serviço MySQL (caso não esteja ativo) e executar ` .\iniciar.ps1 ` na raiz. Mantenha o terminal aberto enquanto utiliza o sistema; `Ctrl+C` encerra o Flask.
+
+## Voz neural offline da Kiara
+
+A voz utiliza o modelo [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) via [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx), com a voz feminina brasileira `pf_dora`. Os pesos do modelo são Apache 2.0 e o adaptador ONNX é MIT. O modelo é executado no próprio computador pelo Flask, usando CPU/ONNX Runtime; não usa Gemini, chave de API ou serviço de voz online. Na primeira instalação, `configurar.ps1` baixa o modelo quantizado e o pacote de vozes (aprox. 142 MB). A primeira reprodução pode demorar um pouco porque o modelo é carregado na memória; as seguintes reutilizam o motor já carregado.
+
+Para testar a independência da internet, conclua `configurar.ps1`, inicie o FitFATEC, ative a voz da Kiara e faça uma pergunta. Depois, desconecte a internet e repita o teste. **A fala continuará funcionando offline**, desde que os arquivos do modelo permaneçam na pasta `ia_academia/modelos/kiara_voz/`. As respostas geradas pelo Gemini, por outro lado, continuam dependendo da internet e da chave `GEMINI_API_KEY`; sem ela, o chat utiliza os recursos locais já existentes.
+
+Se o projeto for levado para outro computador, execute `configurar.ps1` nesse computador antes da apresentação para instalar as dependências e baixar os pesos de voz.
 
 ## Banco de dados existente
 
@@ -114,9 +122,11 @@ FitFATEC/
 ├── bdd/                  # SQL canônico para instalação nova
 ├── ia_academia/          # Flask, Kiara, catálogo, regras, testes e dependências
 │   ├── dados/            # Catálogo de exercícios e arquivos de licença
+│   ├── modelos/kiara_voz/ # Pesos locais do Kokoro (baixados na configuração)
 │   ├── tests/            # Testes automatizados
 │   ├── requirements.txt
-│   └── servidor.py
+│   ├── servidor.py
+│   └── voz_kiara.py      # Síntese neural local da Kiara
 ├── public/               # Interface web (HTML, CSS, JavaScript e imagens)
 │   └── pages/            # Login, perfil, configurações, treinos e agenda
 ├── como_executar/        # Instruções complementares de execução
@@ -140,6 +150,7 @@ O projeto utiliza um catálogo de exercícios com atribuição e licença própr
 | Login ou cadastro falha | MySQL iniciado, banco `fitfatec`, `DB_USER` e `DB_PASSWORD` no `.env`; reinicie o Flask após mudar o arquivo. |
 | `Access denied` no MySQL | Credenciais e privilégios do usuário configurado no `.env`. |
 | `ModuleNotFoundError` | Execute ` .\configurar.ps1 ` na raiz; o ambiente Python fica em `ia_academia/.venv`. |
+| Voz da Kiara indisponível | Execute ` .\configurar.ps1 ` para instalar o Kokoro e baixar os arquivos de voz; confirme que `ia_academia/modelos/kiara_voz/` contém os dois arquivos do modelo. |
 | PowerShell bloqueia scripts | Execute `Set-ExecutionPolicy -Scope Process Bypass` no terminal atual. |
 | Página ou estilo antigo | Atualize com `Ctrl+F5`; se necessário, reinicie o Flask. |
 | Kiara não usa o Gemini | Confira `GEMINI_API_KEY`, modelo configurado, internet e eventuais limites da API. |

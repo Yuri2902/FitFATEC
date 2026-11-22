@@ -2,7 +2,7 @@
 =============================================
 
 REQUISITOS
-- Python 3.10 ou superior; MySQL 8 ou superior; internet na primeira instalação.
+- Python 3.10 a 3.13; MySQL 8 ou superior; internet na primeira instalação.
 - Abra a pasta FitFATEC no VS Code. Execute os comandos no PowerShell,
   na RAIZ do projeto (onde estão configurar.ps1 e iniciar.ps1).
 
@@ -19,8 +19,10 @@ No PowerShell, na raiz:
     Set-ExecutionPolicy -Scope Process Bypass
     .\configurar.ps1
 
-O script instala as dependências em ia_academia/.venv e cria um arquivo
+O script instala as dependências em ia_academia/.venv, baixa os modelos de voz
+Kokoro (aprox. 142 MB) para ia_academia/modelos/kiara_voz e cria um arquivo
 .env na raiz, caso ainda não exista. Ele não sobrescreve um .env existente.
+Depois que os modelos forem baixados, a voz da Kiara funciona sem internet.
 Abra o .env e confira:
 
     DB_HOST=localhost
@@ -53,6 +55,7 @@ treinos e calendário com o MySQL do seu computador.
 5. SE ALGO DER ERRADO
 - Login ou cadastro falha: confira se o MySQL está ligado e se DB_USER,
   DB_PASSWORD e DB_NAME estão corretos no .env; reinicie o Flask.
+- Voz da Kiara indisponível: execute .\configurar.ps1 para instalar o Kokoro e baixar os modelos.
 - ModuleNotFoundError: execute .\configurar.ps1 novamente na raiz.
 - Script bloqueado pelo PowerShell: execute o comando Set-ExecutionPolicy
   da etapa 2 no terminal atual.

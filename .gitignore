@@ -22,3 +22,8 @@ __pycache__/
 
 # Avatares enviados pelos usuarios: preservar localmente, nao enviar ao GitHub
 /public/uploads/avatars/
+
+# Pesos do modelo Kokoro (baixados por configurar.ps1; nao versionar)
+/ia_academia/modelos/kiara_voz/*.onnx
+/ia_academia/modelos/kiara_voz/*.bin
+/ia_academia/modelos/kiara_voz/*.download

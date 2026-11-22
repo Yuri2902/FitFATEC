@@ -6,9 +6,10 @@ import configuracao  # carrega .env ANTES de importar assistente e ler DB_CONFIG
 from datetime import date, datetime, timedelta
 from functools import wraps
 from time import perf_counter
-from flask import Flask, request, jsonify, send_from_directory, session, redirect
+from flask import Flask, request, jsonify, send_from_directory, send_file, session, redirect
 from werkzeug.utils import secure_filename
 from assistente import responder_com_plano
+from voz_kiara import gerar_audio_wav
 import catalogo
 import biblioteca_exercicios
 import plano_kiara
@@ -562,6 +563,38 @@ def _responder_avaliacao_inicial(usuario, mensagem):
     if atualizado is not None:
         payload['usuario'] = atualizado
     return jsonify(payload)
+
+
+@app.post("/api/kiara/voz")
+@login_obrigatorio
+def api_kiara_voz():
+    """Devolve áudio WAV produzido pelo Kokoro local, sem depender do Gemini."""
+    corpo = request.get_json(silent=True) or {}
+    texto = corpo.get("texto", "")
+    if not isinstance(texto, str) or not texto.strip():
+        return jsonify({"erro": "Não há texto para transformar em voz."}), 400
+    if len(texto) > 12000:
+        return jsonify({"erro": "O texto é muito longo para a síntese de voz."}), 413
+
+    try:
+        audio = gerar_audio_wav(texto)
+        return send_file(
+            audio,
+            mimetype="audio/wav",
+            as_attachment=False,
+            download_name="kiara.wav",
+            max_age=0,
+        )
+    except FileNotFoundError:
+        return jsonify({
+            "erro": "A voz neural ainda não foi instalada. Execute configurar.ps1 na raiz do FitFATEC."
+        }), 503
+    except RuntimeError as erro:
+        app.logger.exception("[Kiara][voz] Dependência ou motor de voz indisponível")
+        return jsonify({"erro": str(erro)}), 503
+    except Exception:
+        app.logger.exception("[Kiara][voz] Falha ao gerar áudio local")
+        return jsonify({"erro": "Não foi possível gerar o áudio local da Kiara."}), 500
 
 
 @app.post("/api/chat")

@@ -220,72 +220,111 @@
     const boxMensagens = document.getElementById("mensagens");
     const botaoVoz = document.getElementById("alternarVozKiara");
     const botaoPararVoz = document.getElementById("pararVozKiara");
-    const suporteVoz = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
     let vozAtivada = false;
+    let audioAtual = null;
+    let urlAudioAtual = null;
+    let requisicaoVoz = null;
+    let idFala = 0;
 
     function atualizarControlesVoz() {
       if (botaoVoz) {
         botaoVoz.setAttribute("aria-pressed", String(vozAtivada));
         botaoVoz.classList.toggle("voz-ativa", vozAtivada);
-        const texto = botaoVoz.querySelector("span");
-        if (texto) texto.textContent = vozAtivada ? "Voz ativada" : "Ativar voz";
-        botaoVoz.title = vozAtivada ? "Desativar voz da Kiara" : "Ativar voz da Kiara";
+        botaoVoz.title = vozAtivada
+          ? "Desativar respostas faladas da Kiara"
+          : "Ativar respostas faladas da Kiara";
+        botaoVoz.setAttribute("aria-label", vozAtivada
+          ? "Desativar voz da Kiara"
+          : "Ativar voz da Kiara");
       }
       if (botaoPararVoz) {
-        botaoPararVoz.disabled = !suporteVoz || !window.speechSynthesis.speaking;
+        botaoPararVoz.disabled = !audioAtual || audioAtual.paused || audioAtual.ended;
       }
     }
 
-    function selecionarVozPortugues() {
-      if (!suporteVoz) return null;
-      const vozes = window.speechSynthesis.getVoices();
-      const brasileiras = vozes.filter((voz) => /^pt-BR$/i.test(voz.lang));
-      // Alguns navegadores não informam o gênero da voz; os nomes variam por sistema.
-      const feminina = brasileiras.find((voz) => /female|feminina|francisca|maria|google português do brasil/i.test(voz.name));
-      return feminina || brasileiras[0] || vozes.find((voz) => /^pt/i.test(voz.lang)) || null;
-    }
-
-    function falarComoKiara(texto) {
-      if (!vozAtivada || !suporteVoz || !texto) return;
-      window.speechSynthesis.cancel();
-      const fala = new SpeechSynthesisUtterance(String(texto));
-      fala.lang = "pt-BR";
-      fala.rate = 1;
-      fala.pitch = 1.08;
-      const voz = selecionarVozPortugues();
-      if (voz) fala.voice = voz;
-      fala.onstart = atualizarControlesVoz;
-      fala.onend = atualizarControlesVoz;
-      fala.onerror = atualizarControlesVoz;
-      window.speechSynthesis.speak(fala);
+    function pararAudioKiara() {
+      idFala += 1;
+      if (requisicaoVoz) {
+        requisicaoVoz.abort();
+        requisicaoVoz = null;
+      }
+      if (audioAtual) {
+        audioAtual.onended = null;
+        audioAtual.onerror = null;
+        audioAtual.pause();
+        audioAtual.removeAttribute("src");
+        audioAtual.load();
+        audioAtual = null;
+      }
+      if (urlAudioAtual) {
+        URL.revokeObjectURL(urlAudioAtual);
+        urlAudioAtual = null;
+      }
       atualizarControlesVoz();
     }
 
-    if (botaoVoz) {
-      if (!suporteVoz) {
-        botaoVoz.disabled = true;
-        botaoVoz.title = "Este navegador não oferece suporte à síntese de voz";
-        const texto = botaoVoz.querySelector("span");
-        if (texto) texto.textContent = "Voz indisponível";
-      } else {
-        botaoVoz.addEventListener("click", () => {
-          vozAtivada = !vozAtivada;
-          if (!vozAtivada) window.speechSynthesis.cancel();
-          atualizarControlesVoz();
+    async function falarComoKiara(texto) {
+      if (!vozAtivada || !texto) return;
+      pararAudioKiara();
+      const falaAtual = ++idFala;
+      const controller = new AbortController();
+      requisicaoVoz = controller;
+
+      try {
+        const resposta = await fetch("/api/kiara/voz", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto: String(texto) }),
+          signal: controller.signal
         });
+
+        if (!resposta.ok) {
+          let dados = {};
+          try { dados = await resposta.json(); } catch (_) {}
+          throw new Error(dados.erro || "A voz local não está disponível.");
+        }
+
+        const audioBlob = await resposta.blob();
+        if (!vozAtivada || falaAtual !== idFala) return;
+
+        urlAudioAtual = URL.createObjectURL(audioBlob);
+        const audio = new Audio(urlAudioAtual);
+        audioAtual = audio;
+        audio.onended = () => {
+          if (audioAtual === audio) pararAudioKiara();
+        };
+        audio.onerror = () => {
+          if (audioAtual === audio) {
+            pararAudioKiara();
+            window.FitApp.ui.toast("Não foi possível reproduzir o áudio da Kiara.", "erro");
+          }
+        };
+        await audio.play();
+        atualizarControlesVoz();
+      } catch (erro) {
+        if (erro.name !== "AbortError" && vozAtivada && falaAtual === idFala) {
+          pararAudioKiara();
+          window.FitApp.ui.toast(erro.message || "Falha ao gerar a voz local da Kiara.", "erro");
+        }
+      } finally {
+        if (requisicaoVoz === controller) requisicaoVoz = null;
+        atualizarControlesVoz();
       }
     }
-    if (botaoPararVoz) {
-      botaoPararVoz.addEventListener("click", () => {
-        if (suporteVoz) window.speechSynthesis.cancel();
+
+    if (botaoVoz) {
+      botaoVoz.title = "Ativar respostas faladas da Kiara";
+      botaoVoz.addEventListener("click", () => {
+        vozAtivada = !vozAtivada;
+        if (!vozAtivada) pararAudioKiara();
         atualizarControlesVoz();
       });
     }
-    if (suporteVoz) {
-      window.speechSynthesis.addEventListener?.("voiceschanged", () => {
-        // As vozes podem ser carregadas de forma assíncrona pelo navegador.
-      });
+    if (botaoPararVoz) {
+      botaoPararVoz.addEventListener("click", pararAudioKiara);
     }
+    window.addEventListener("beforeunload", pararAudioKiara);
     atualizarControlesVoz();
 
     function atualizarIndicadorIA(modo) {

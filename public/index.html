@@ -28,15 +28,6 @@
       </div>
       <div class="kiara-header-actions">
         <span class="fit-status-pill" id="indicadorModoIA" role="status" aria-live="polite">IA: aguardando</span>
-        <div class="kiara-voice-controls" role="group" aria-label="Controles de voz da Kiara">
-          <button type="button" id="alternarVozKiara" class="kiara-voice-btn" aria-pressed="false" title="Ativar voz da Kiara">
-            <svg class="voice-icon-on" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-            <span>Ativar voz</span>
-          </button>
-          <button type="button" id="pararVozKiara" class="kiara-voice-btn kiara-voice-stop" title="Interromper fala da Kiara" aria-label="Interromper fala da Kiara" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-          </button>
-        </div>
         <nav class="kiara-quick-links" aria-label="Acessos rápidos da Kiara">
           <a href="/pages/treinos.html">Meus treinos</a>
           <a href="/pages/agendamentos.html">Agendamentos</a>
@@ -68,6 +59,14 @@ Como posso te ajudar hoje?</div>
 
     <form id="formChat">
       <input id="pergunta" type="text" placeholder="Digite sua mensagem..." autocomplete="off" required>
+      <div class="kiara-voice-controls" role="group" aria-label="Controles de voz da Kiara">
+        <button type="button" id="alternarVozKiara" class="kiara-voice-btn" aria-pressed="false" aria-label="Ativar voz da Kiara" title="Ativar respostas faladas da Kiara">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        </button>
+        <button type="button" id="pararVozKiara" class="kiara-voice-btn kiara-voice-stop" title="Interromper fala da Kiara" aria-label="Interromper fala da Kiara" disabled>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+        </button>
+      </div>
       <button id="enviar" type="submit" class="fit-btn-primary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         Enviar
