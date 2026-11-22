@@ -222,3 +222,39 @@
   cursor: pointer; font-size: .76rem; padding: 6px 0 2px;
 }
 .kiara-dias-semana small { display: block; font-size: .75rem; }
+
+
+/* Controles de fala da Kiara (SpeechSynthesis nativo do navegador). */
+.kiara-voice-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.kiara-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--borda-forte);
+  border-radius: 9px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, opacity .15s ease;
+}
+.kiara-voice-btn:hover:not(:disabled), .kiara-voice-btn.voz-ativa {
+  border-color: var(--accent-primary);
+  background: rgba(249, 115, 22, .12);
+}
+.kiara-voice-btn.voz-ativa { color: var(--accent-primary); }
+.kiara-voice-btn:disabled { opacity: .45; cursor: not-allowed; }
+.kiara-voice-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.kiara-voice-stop { width: 34px; padding: 6px; }
+@media (max-width: 760px) {
+  .informacoes-kiara { align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .kiara-header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+}

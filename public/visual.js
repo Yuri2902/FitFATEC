@@ -218,6 +218,75 @@
     const form = document.getElementById("formChat");
     const input = document.getElementById("pergunta");
     const boxMensagens = document.getElementById("mensagens");
+    const botaoVoz = document.getElementById("alternarVozKiara");
+    const botaoPararVoz = document.getElementById("pararVozKiara");
+    const suporteVoz = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+    let vozAtivada = false;
+
+    function atualizarControlesVoz() {
+      if (botaoVoz) {
+        botaoVoz.setAttribute("aria-pressed", String(vozAtivada));
+        botaoVoz.classList.toggle("voz-ativa", vozAtivada);
+        const texto = botaoVoz.querySelector("span");
+        if (texto) texto.textContent = vozAtivada ? "Voz ativada" : "Ativar voz";
+        botaoVoz.title = vozAtivada ? "Desativar voz da Kiara" : "Ativar voz da Kiara";
+      }
+      if (botaoPararVoz) {
+        botaoPararVoz.disabled = !suporteVoz || !window.speechSynthesis.speaking;
+      }
+    }
+
+    function selecionarVozPortugues() {
+      if (!suporteVoz) return null;
+      const vozes = window.speechSynthesis.getVoices();
+      const brasileiras = vozes.filter((voz) => /^pt-BR$/i.test(voz.lang));
+      // Alguns navegadores não informam o gênero da voz; os nomes variam por sistema.
+      const feminina = brasileiras.find((voz) => /female|feminina|francisca|maria|google português do brasil/i.test(voz.name));
+      return feminina || brasileiras[0] || vozes.find((voz) => /^pt/i.test(voz.lang)) || null;
+    }
+
+    function falarComoKiara(texto) {
+      if (!vozAtivada || !suporteVoz || !texto) return;
+      window.speechSynthesis.cancel();
+      const fala = new SpeechSynthesisUtterance(String(texto));
+      fala.lang = "pt-BR";
+      fala.rate = 1;
+      fala.pitch = 1.08;
+      const voz = selecionarVozPortugues();
+      if (voz) fala.voice = voz;
+      fala.onstart = atualizarControlesVoz;
+      fala.onend = atualizarControlesVoz;
+      fala.onerror = atualizarControlesVoz;
+      window.speechSynthesis.speak(fala);
+      atualizarControlesVoz();
+    }
+
+    if (botaoVoz) {
+      if (!suporteVoz) {
+        botaoVoz.disabled = true;
+        botaoVoz.title = "Este navegador não oferece suporte à síntese de voz";
+        const texto = botaoVoz.querySelector("span");
+        if (texto) texto.textContent = "Voz indisponível";
+      } else {
+        botaoVoz.addEventListener("click", () => {
+          vozAtivada = !vozAtivada;
+          if (!vozAtivada) window.speechSynthesis.cancel();
+          atualizarControlesVoz();
+        });
+      }
+    }
+    if (botaoPararVoz) {
+      botaoPararVoz.addEventListener("click", () => {
+        if (suporteVoz) window.speechSynthesis.cancel();
+        atualizarControlesVoz();
+      });
+    }
+    if (suporteVoz) {
+      window.speechSynthesis.addEventListener?.("voiceschanged", () => {
+        // As vozes podem ser carregadas de forma assíncrona pelo navegador.
+      });
+    }
+    atualizarControlesVoz();
 
     function atualizarIndicadorIA(modo) {
       const indicador = document.getElementById("indicadorModoIA");
@@ -433,6 +502,7 @@
           const respostaTexto = res.resposta || res.mensagem || "Pronto!";
           document.querySelectorAll("#mensagens .kiara-opcoes").forEach(el => el.remove());
           adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino), res.opcoes, res.etapa, res.treino_anterior_texto || null);
+          falarComoKiara(respostaTexto);
           window.FitApp.historicoChat.push({ role: "assistant", content: respostaTexto });
           atualizarIndicadorIA(res.modo);
           if (res.usuario) {
