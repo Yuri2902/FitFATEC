@@ -252,6 +252,44 @@
   background: rgba(249, 115, 22, .12);
 }
 .kiara-voice-btn.voz-ativa { color: var(--accent-primary); }
+/* Estado desligado = alto-falante com X. Ativado em silêncio = alto-falante. */
+.kiara-voice-icon { display: none; align-items: center; justify-content: center; }
+#alternarVozKiara .kiara-voice-icon-muted { display: inline-flex; }
+#alternarVozKiara.voz-ativa .kiara-voice-icon-muted { display: none; }
+#alternarVozKiara.voz-ativa .kiara-voice-icon-active { display: inline-flex; }
+#alternarVozKiara.voz-falando .kiara-voice-icon-active { display: none; }
+#alternarVozKiara.voz-falando .kiara-voice-icon-speaking { display: inline-flex; }
+
+/* Barras animadas de equalizador apenas enquanto o áudio está tocando. */
+.kiara-equalizador { height: 21px; display: inline-flex; gap: 3px; align-items: center; justify-content: center; }
+.kiara-equalizador > i {
+  display: block; width: 3px; height: 9px; border-radius: 3px;
+  background: currentColor; transform-origin: center;
+  animation: kiara-barras 660ms ease-in-out infinite alternate;
+}
+.kiara-equalizador > i:nth-child(2) { animation-duration: 490ms; animation-delay: -210ms; height: 16px; }
+.kiara-equalizador > i:nth-child(3) { animation-duration: 750ms; animation-delay: -380ms; height: 12px; }
+.kiara-equalizador > i:nth-child(4) { animation-duration: 570ms; animation-delay: -120ms; height: 18px; }
+@keyframes kiara-barras { from { transform: scaleY(.3); } to { transform: scaleY(1.13); } }
+#alternarVozKiara.voz-falando {
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: rgba(249, 115, 22, .20);
+}
+/* O botão de parar fica visivelmente clicável durante a reprodução. */
+.kiara-voice-stop.pode-parar:not(:disabled) {
+  color: #fff;
+  border-color: #e44f35;
+  background: #bc3f2b;
+  box-shadow: 0 0 0 2px rgba(224, 86, 52, .28);
+}
+.kiara-voice-stop.pode-parar:hover:not(:disabled) {
+  background: #d94e30;
+  box-shadow: 0 0 0 3px rgba(224, 86, 52, .35);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiara-equalizador > i { animation: none; transform: none; }
+}
 .kiara-voice-btn:disabled { opacity: .45; cursor: not-allowed; }
 .kiara-voice-btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
 .kiara-voice-stop { width: 40px; padding: 6px; }

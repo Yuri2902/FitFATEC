@@ -9,6 +9,7 @@ import os
 import configuracao  # prepara GEMINI_API_KEY a partir do .env, se existir
 import re
 import logging
+from contextvars import ContextVar
 from time import perf_counter
 import unicodedata
 
@@ -19,6 +20,33 @@ import personalidades  # Dev 3: modos de personalidade da Kiara escolhidos pelo 
 from nomes_exercicios_pt import nome_pt as traduzir_nome_exercicio
 
 logger = logging.getLogger(__name__)
+
+# Motivo da última resposta local, isolado por requisição (Flask usa threads).
+# Nunca registra chave ou conteúdo privado das mensagens.
+_motivo_fallback = ContextVar("kiara_motivo_fallback", default=None)
+
+def diagnostico_fallback_gemini():
+    """Devolve somente um código seguro e uma orientação para a interface."""
+    return _motivo_fallback.get()
+
+def _classificar_erro_gemini(erro):
+    codigo = getattr(erro, "status_code", None) or getattr(erro, "code", None)
+    try:
+        codigo = int(codigo)
+    except (ValueError, TypeError):
+        codigo = None
+    nome = type(erro).__name__.lower()
+    if codigo in (401, 403):
+        return {"codigo": "autenticacao", "mensagem": "Chave ou permissão do Gemini inválida. Confira a GEMINI_API_KEY no .env."}
+    if codigo == 404:
+        return {"codigo": "modelo", "mensagem": "Modelo Gemini indisponível para esta chave. Confira GEMINI_MODEL no .env."}
+    if codigo == 429:
+        return {"codigo": "limite", "mensagem": "Limite de uso da API Gemini atingido. Tente novamente mais tarde."}
+    if codigo in (500, 502, 503, 504):
+        return {"codigo": "servico", "mensagem": "O serviço Gemini está instável. A Kiara respondeu com recursos locais."}
+    if codigo in (408,) or "timeout" in nome or "timedout" in nome:
+        return {"codigo": "tempo", "mensagem": "A API Gemini ultrapassou o tempo configurado. Resposta local utilizada."}
+    return {"codigo": "falha", "mensagem": "O Gemini não respondeu nesta solicitação. Confira o terminal do Flask."}
 
 # Gemini
 API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
@@ -474,10 +502,17 @@ def _portugues_na_resposta(texto: str) -> str:
 
 # Resposta com origem explícita, para distinguir uma geração real do catálogo offline.
 def responder_com_modo(aluno: dict, historico: list) -> tuple[str, str]:
+    _motivo_fallback.set(None)
     if not historico:
         return "Erro: nenhuma mensagem foi enviada.", "offline"
 
     if client is None:
+        motivo = (
+            {"codigo": "sem_chave", "mensagem": "Adicione GEMINI_API_KEY ao .env e reinicie o Flask."}
+            if not API_KEY else
+            {"codigo": "sem_sdk", "mensagem": "Instale google-genai com configurar.ps1 para habilitar o Gemini."}
+        )
+        _motivo_fallback.set(motivo)
         return responder_offline(aluno, historico), "offline"
 
     conteudo = [
@@ -533,10 +568,12 @@ def responder_com_modo(aluno: dict, historico: list) -> tuple[str, str]:
                             "uma alternativa para essa troca.", "gemini")
                 texto = nova.text.strip()
             return _portugues_na_resposta(texto), "gemini"
+        _motivo_fallback.set({"codigo": "vazia", "mensagem": "O Gemini não retornou texto nesta solicitação. A Kiara usou recursos locais."})
         logger.warning("Gemini retornou resposta vazia; usando o catálogo offline.")
     except Exception as erro:
         # Não expõe no log a API key, mensagens privadas nem dados do aluno.
         codigo = getattr(erro, "status_code", None) or getattr(erro, "code", None)
+        _motivo_fallback.set(_classificar_erro_gemini(erro))
         logger.warning("Falha no Gemini (%s; código=%s). Usando modo offline.",
                        type(erro).__name__, codigo or "desconhecido")
     return responder_offline(aluno, historico), "offline"

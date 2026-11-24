@@ -36,6 +36,12 @@ def _carregar_motor():
     return _motor_voz
 
 
+def preparar_motor_voz() -> None:
+    """Pré-carrega o Kokoro ao ativar o botão de voz, sem sintetizar fala."""
+    with _lock_voz:
+        _carregar_motor()
+
+
 def gerar_audio_wav(texto: str) -> BytesIO:
     """Gera WAV PCM localmente; não faz chamadas a serviços externos."""
     texto = str(texto or "").strip()
@@ -51,7 +57,7 @@ def gerar_audio_wav(texto: str) -> BytesIO:
         audio, taxa_amostragem = motor.create(
             texto,
             voice="pf_dora",
-            speed=0.96,
+            speed=1.10,
             lang="pt-br",
         )
 

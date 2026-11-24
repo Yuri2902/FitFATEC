@@ -8,8 +8,9 @@ from functools import wraps
 from time import perf_counter
 from flask import Flask, request, jsonify, send_from_directory, send_file, session, redirect
 from werkzeug.utils import secure_filename
-from assistente import responder_com_plano
-from voz_kiara import gerar_audio_wav
+from assistente import responder_com_plano, diagnostico_fallback_gemini
+from voz_kiara import gerar_audio_wav, preparar_motor_voz
+from voz_neural import gerar_audio_neural_sincrono
 import catalogo
 import biblioteca_exercicios
 import plano_kiara
@@ -565,6 +566,43 @@ def _responder_avaliacao_inicial(usuario, mensagem):
     return jsonify(payload)
 
 
+@app.post("/api/kiara/voz/neural")
+@login_obrigatorio
+def api_kiara_voz_neural():
+    """MP3 neural pt-BR + tempos das palavras para acompanhar a fala no chat."""
+    corpo = request.get_json(silent=True) or {}
+    texto = corpo.get('texto', '')
+    if not isinstance(texto, str) or not texto.strip():
+        return jsonify({'erro': 'Texto da fala vazio.'}), 400
+    if len(texto) > 240:
+        return jsonify({'erro': 'Trecho da fala longo demais.'}), 413
+    try:
+        inicio = perf_counter()
+        resultado = gerar_audio_neural_sincrono(texto)
+        print(f'[Kiara][voz neural] sintese={perf_counter()-inicio:.3f}s', flush=True)
+        return jsonify(resultado)
+    except (ImportError, ModuleNotFoundError):
+        app.logger.warning('[Kiara][voz neural] Pacote edge-tts não instalado.')
+        return jsonify({'erro': 'Instale a dependência edge-tts para ativar a voz neural.'}), 503
+    except Exception:
+        app.logger.exception('[Kiara][voz neural] Erro no serviço de voz.')
+        return jsonify({'erro': 'Voz neural indisponível. Tentando a voz local.'}), 503
+
+
+@app.post("/api/kiara/voz/preparar")
+@login_obrigatorio
+def api_kiara_preparar_voz():
+    """Pré-carrega a voz enquanto o aluno escreve, sem alterar o chat."""
+    inicio = perf_counter()
+    try:
+        preparar_motor_voz()
+        print(f"[Kiara][voz] preparar_modelo={perf_counter() - inicio:.3f}s", flush=True)
+        return jsonify({"pronta": True})
+    except Exception:
+        app.logger.exception("[Kiara][voz] Não foi possível preparar o modelo")
+        return jsonify({"erro": "A voz local está indisponível; confira a instalação do Kokoro."}), 503
+
+
 @app.post("/api/kiara/voz")
 @login_obrigatorio
 def api_kiara_voz():
@@ -577,7 +615,9 @@ def api_kiara_voz():
         return jsonify({"erro": "O texto é muito longo para a síntese de voz."}), 413
 
     try:
+        inicio_audio = perf_counter()
         audio = gerar_audio_wav(texto)
+        print(f"[Kiara][voz] trecho={len(texto)} caracteres; sintese={perf_counter() - inicio_audio:.3f}s", flush=True)
         return send_file(
             audio,
             mimetype="audio/wav",
@@ -754,6 +794,7 @@ def api_chat():
         return jsonify({
             "resposta": resposta,
             "modo": modo,
+            "ia_aviso": diagnostico_fallback_gemini() if modo == "offline" else None,
             "eh_treino": bool(eh_treino),
             "personalidade": aluno["personalidade"],  # Dev 3: modo usado nesta resposta
             "treino_anterior_texto": texto_ficha_anterior,

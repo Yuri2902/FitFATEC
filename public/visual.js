@@ -221,33 +221,73 @@
     const botaoVoz = document.getElementById("alternarVozKiara");
     const botaoPararVoz = document.getElementById("pararVozKiara");
     let vozAtivada = false;
+    let vozFalandoAgora = false;
+    let vozCarregando = false;
+    let vozSelecionada = "Neural pt-BR — Francisca";
     let audioAtual = null;
     let urlAudioAtual = null;
-    let requisicaoVoz = null;
     let idFala = 0;
+    let concluirTrechoAtual = null;
+    let revelacaoAtual = null;
+    const pedidosVoz = new Set();
+    let erroOfflineAvisado = null;
 
     function atualizarControlesVoz() {
       if (botaoVoz) {
         botaoVoz.setAttribute("aria-pressed", String(vozAtivada));
         botaoVoz.classList.toggle("voz-ativa", vozAtivada);
-        botaoVoz.title = vozAtivada
-          ? "Desativar respostas faladas da Kiara"
-          : "Ativar respostas faladas da Kiara";
-        botaoVoz.setAttribute("aria-label", vozAtivada
-          ? "Desativar voz da Kiara"
-          : "Ativar voz da Kiara");
+        botaoVoz.classList.toggle("voz-desligada", !vozAtivada);
+        botaoVoz.classList.toggle("voz-falando", vozAtivada && vozFalandoAgora);
+        botaoVoz.title = vozAtivada ? `Voz: ${vozSelecionada}` : "Ativar voz da Kiara";
+        botaoVoz.setAttribute("aria-label", vozAtivada ? "Desativar voz da Kiara" : "Ativar voz da Kiara");
       }
       if (botaoPararVoz) {
-        botaoPararVoz.disabled = !audioAtual || audioAtual.paused || audioAtual.ended;
+        const podeParar = vozAtivada && (vozCarregando || vozFalandoAgora);
+        botaoPararVoz.disabled = !podeParar;
+        botaoPararVoz.classList.toggle("pode-parar", podeParar);
+        botaoPararVoz.title = podeParar ? "Parar a voz agora" : "Kiara em silêncio";
       }
     }
 
+    // A resposta fica invisível enquanto o áudio não toca. Cada palavra
+    // aparece DEPOIS de seu tempo real de início no MP3, com pequeno atraso.
+    function prepararRevelacao(elemento, texto, id) {
+      if (!elemento?._kiaraTextoNode) return null;
+      const no = elemento._kiaraTextoNode;
+      const completo = String(texto || "");
+      const fimPalavras = Array.from(completo.matchAll(/\S+/gu), m => m.index + m[0].length);
+      no.nodeValue = "";
+      let exibidas = 0;
+      const controle = {
+        id,
+        total: fimPalavras.length,
+        mostrar(quantidade) {
+          if (id !== idFala) return;
+          const n = Math.max(exibidas, Math.min(fimPalavras.length, Math.floor(quantidade)));
+          if (n <= exibidas) return;
+          exibidas = n;
+          no.nodeValue = completo.slice(0, fimPalavras[n - 1]);
+          if (boxMensagens) boxMensagens.scrollTop = boxMensagens.scrollHeight;
+        },
+        concluir() { no.nodeValue = completo; }
+      };
+      return controle;
+    }
+
+    function concluirRevelacao() {
+      if (!revelacaoAtual) return;
+      revelacaoAtual.concluir();
+      revelacaoAtual = null;
+    }
+
     function pararAudioKiara() {
+      // O texto completo aparece após Parar, mesmo se a fala for interrompida.
+      concluirRevelacao();
       idFala += 1;
-      if (requisicaoVoz) {
-        requisicaoVoz.abort();
-        requisicaoVoz = null;
-      }
+      vozFalandoAgora = false;
+      vozCarregando = false;
+      for (const controller of pedidosVoz) controller.abort();
+      pedidosVoz.clear();
       if (audioAtual) {
         audioAtual.onended = null;
         audioAtual.onerror = null;
@@ -260,56 +300,191 @@
         URL.revokeObjectURL(urlAudioAtual);
         urlAudioAtual = null;
       }
+      if (concluirTrechoAtual) {
+        const terminar = concluirTrechoAtual;
+        concluirTrechoAtual = null;
+        terminar();
+      }
+      try { window.speechSynthesis?.cancel(); } catch (_) {}
       atualizarControlesVoz();
     }
 
-    async function falarComoKiara(texto) {
+    // Envia frases completas ao TTS: cada chamada corresponde a uma unidade de fala.
+    // O serviço neural aceita no máximo 240 caracteres; usar margem de segurança.
+    function dividirFala(texto) {
+      const limpo = String(texto || "")
+        .replace(/https?:\/\/\S+/g, "link")
+        .replace(/[*_#`]/g, "")
+        .replace(/\s+/g, " ").trim();
+      const frases = limpo.match(/[^.!?;]+[.!?;]?/g) || [];
+      const limite = 220;
+      const trechos = [];
+      let atual = "";
+      function anexar(parte) {
+        parte = parte.trim();
+        if (!parte) return;
+        if (atual && (atual.length + parte.length + 1 > limite)) {
+          trechos.push(atual);
+          atual = "";
+        }
+        atual += (atual ? " " : "") + parte;
+      }
+      for (const original of frases) {
+        const frase = original.trim();
+        if (!frase) continue;
+        if (frase.length <= limite) {
+          anexar(frase);
+          continue;
+        }
+        // Somente frases excepcionalmente longas são subdivididas;
+        // preferir vírgulas e outros intervalos naturais antes das palavras.
+        if (atual) { trechos.push(atual); atual = ""; }
+        const partes = frase.split(/(?<=,)\s+/);
+        for (const parte of partes) {
+          if (parte.length <= limite) { anexar(parte); continue; }
+          if (atual) { trechos.push(atual); atual = ""; }
+          for (const palavra of parte.split(/\s+/)) {
+            if (atual && atual.length + palavra.length + 1 > limite) {
+              trechos.push(atual); atual = "";
+            }
+            atual += (atual ? " " : "") + palavra;
+          }
+        }
+      }
+      if (atual) trechos.push(atual);
+      return trechos;
+    }
+
+    async function buscarVozOnline(texto) {
+      const ctrl = new AbortController();
+      pedidosVoz.add(ctrl);
+      try {
+        const res = await fetch("/api/kiara/voz/neural", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto }), signal: ctrl.signal,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.audio_b64) throw new Error(data.erro || "Voz neural indisponível");
+        const bin = atob(data.audio_b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return { blob: new Blob([bytes], { type: "audio/mpeg" }),
+          marcacoes: Array.isArray(data.marcacoes) ? data.marcacoes : [],
+          origem: "neural", nome: data.voz || "Francisca" };
+      } finally {
+        pedidosVoz.delete(ctrl);
+      }
+    }
+
+    async function buscarVozLocal(texto) {
+      const ctrl = new AbortController();
+      pedidosVoz.add(ctrl);
+      try {
+        const res = await fetch("/api/kiara/voz", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto }), signal: ctrl.signal,
+        });
+        if (!res.ok) throw new Error("Voz local indisponível");
+        return { blob: await res.blob(), marcacoes: [], origem: "local", nome: "Kokoro (reserva)" };
+      } finally {
+        pedidosVoz.delete(ctrl);
+      }
+    }
+
+    async function buscarAudioTrecho(texto) {
+      try { return await buscarVozOnline(texto); }
+      catch (erro) {
+        if (erro.name === "AbortError") throw erro;
+        console.warn("[Kiara][voz] Voz neural indisponível, tentando reserva:", erro.message);
+        return buscarVozLocal(texto);
+      }
+    }
+
+    async function tocarTrecho(dados, id, inicioPalavras, nPalavras) {
+      if (id !== idFala || !vozAtivada) return;
+      vozSelecionada = dados.nome;
+      const url = URL.createObjectURL(dados.blob);
+      const audio = new Audio(url);
+      urlAudioAtual = url;
+      audioAtual = audio;
+      const marcacoes = dados.marcacoes;
+      let monitor = null;
+      try {
+        await new Promise((resolve, reject) => {
+          concluirTrechoAtual = resolve;
+          const atualizar = () => {
+            if (id !== idFala || !revelacaoAtual) return;
+            if (marcacoes.length) {
+              // A palavra só aparece 130ms DEPOIS do início real no áudio.
+              const t = Math.max(0, audio.currentTime - 0.13);
+              const ditas = marcacoes.filter(m => Number(m.seg) <= t).length;
+              revelacaoAtual.mostrar(inicioPalavras + Math.min(nPalavras, ditas));
+            }
+          };
+          audio.onplaying = () => {
+            vozFalandoAgora = true;
+            vozCarregando = false;
+            atualizarControlesVoz();
+            monitor = setInterval(atualizar, 55);
+          };
+          audio.onended = () => {
+            if (revelacaoAtual) revelacaoAtual.mostrar(inicioPalavras + nPalavras);
+            resolve();
+          };
+          audio.onerror = () => reject(new Error("Falha ao reproduzir o MP3."));
+          audio.play().catch(reject);
+        });
+      } finally {
+        if (monitor) clearInterval(monitor);
+        if (concluirTrechoAtual) concluirTrechoAtual = null;
+        audio.pause();
+        audio.onplaying = null;
+        audio.onended = null;
+        audio.onerror = null;
+        if (audioAtual === audio) audioAtual = null;
+        URL.revokeObjectURL(url);
+        if (urlAudioAtual === url) urlAudioAtual = null;
+        vozFalandoAgora = false;
+        atualizarControlesVoz();
+      }
+    }
+
+    async function falarComoKiara(texto, elementoMensagem = null) {
       if (!vozAtivada || !texto) return;
       pararAudioKiara();
-      const falaAtual = ++idFala;
-      const controller = new AbortController();
-      requisicaoVoz = controller;
-
+      const id = idFala;
+      // Texto completo desde o início. Sem efeito palavra por palavra:
+      // evita a mensagem vazia enquanto uma ficha já oferece o botão de salvar.
+      revelacaoAtual = null;
+      vozCarregando = true;
+      atualizarControlesVoz();
+      const trechos = dividirFala(texto);
+      let faladas = 0;
+      let proxima = trechos.length ? buscarAudioTrecho(trechos[0]) : null;
+      // Evita rejeição não tratada caso o usuário clique em Parar.
+      if (proxima) proxima.catch(() => {});
       try {
-        const resposta = await fetch("/api/kiara/voz", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texto: String(texto) }),
-          signal: controller.signal
-        });
-
-        if (!resposta.ok) {
-          let dados = {};
-          try { dados = await resposta.json(); } catch (_) {}
-          throw new Error(dados.erro || "A voz local não está disponível.");
+        for (let i = 0; i < trechos.length; i++) {
+          const dados = await proxima;
+          if (id !== idFala || !vozAtivada) return;
+          proxima = i + 1 < trechos.length ? buscarAudioTrecho(trechos[i + 1]) : null;
+          if (proxima) proxima.catch(() => {});
+          const n = (trechos[i].match(/\S+/g) || []).length;
+          await tocarTrecho(dados, id, faladas, n);
+          faladas += n;
+          if (id !== idFala || !vozAtivada) return;
+          vozCarregando = Boolean(proxima);
+          atualizarControlesVoz();
         }
-
-        const audioBlob = await resposta.blob();
-        if (!vozAtivada || falaAtual !== idFala) return;
-
-        urlAudioAtual = URL.createObjectURL(audioBlob);
-        const audio = new Audio(urlAudioAtual);
-        audioAtual = audio;
-        audio.onended = () => {
-          if (audioAtual === audio) pararAudioKiara();
-        };
-        audio.onerror = () => {
-          if (audioAtual === audio) {
-            pararAudioKiara();
-            window.FitApp.ui.toast("Não foi possível reproduzir o áudio da Kiara.", "erro");
-          }
-        };
-        await audio.play();
-        atualizarControlesVoz();
       } catch (erro) {
-        if (erro.name !== "AbortError" && vozAtivada && falaAtual === idFala) {
-          pararAudioKiara();
-          window.FitApp.ui.toast(erro.message || "Falha ao gerar a voz local da Kiara.", "erro");
+        if (id === idFala && erro.name !== "AbortError") {
+          console.warn("[Kiara][voz] Falha de síntese:", erro.message);
+          window.FitApp.ui.toast("Voz indisponível. Resposta exibida em texto.", "erro");
         }
       } finally {
-        if (requisicaoVoz === controller) requisicaoVoz = null;
-        atualizarControlesVoz();
+        if (id === idFala) pararAudioKiara();
       }
     }
 
@@ -321,13 +496,11 @@
         atualizarControlesVoz();
       });
     }
-    if (botaoPararVoz) {
-      botaoPararVoz.addEventListener("click", pararAudioKiara);
-    }
+    if (botaoPararVoz) botaoPararVoz.addEventListener("click", pararAudioKiara);
     window.addEventListener("beforeunload", pararAudioKiara);
     atualizarControlesVoz();
 
-    function atualizarIndicadorIA(modo) {
+    function atualizarIndicadorIA(modo, aviso = null) {
       const indicador = document.getElementById("indicadorModoIA");
       if (!indicador) return;
       indicador.classList.remove("ia-ativa", "ia-offline", "ia-configuracao");
@@ -338,7 +511,9 @@
       } else if (modo === "offline") {
         indicador.classList.add("ia-offline");
         indicador.textContent = "IA offline";
-        indicador.title = "Esta resposta foi gerada com recursos locais";
+        indicador.title = aviso && aviso.mensagem
+          ? "Gemini indisponível: " + aviso.mensagem
+          : "Esta resposta foi gerada com recursos locais";
       } else if (modo === "configuracao") {
         indicador.classList.add("ia-configuracao");
         indicador.textContent = "Configurando perfil";
@@ -361,14 +536,21 @@
     function pareceTreino(texto) {
       // Reconhece fichas por repetições (3x10) OU duração (20 min, 3x2 min).
       // Exige prescrição junto ao nome do exercício, não apenas o título "Cardio".
-      return /(?:^|\n)\s*(?:[-•*]\s*)?[^\n:]{3,100}:\s*(?:\d+\s*[xX×]\s*\d+|\d+\s*min(?:utos?)?\b)/im.test(texto || '');
+      const linhas = String(texto || '').split(/\n/);
+      const prescricao = /^\s*(?:[-•*]\s*)?[^\n:]{3,100}:\s*(?:\d+\s*[xX×]\s*\d+|\d+\s*min(?:utos?)?\b)/i;
+      // Uma linha isolada pode ser exemplo ou um rascunho parcial.
+      return linhas.filter(linha => prescricao.test(linha)).length >= 2;
     }
 
     function adicionarMensagem(texto, remetente, comBotaoSalvar = false, opcoes = [], etapa = null, treinoAnterior = null) {
       if (!boxMensagens) return null;
       const div = document.createElement("div");
       div.className = `msg ${remetente}`;
-      div.textContent = texto;
+      // Nó exclusivo para o texto: a revelação progressiva não remove
+      // os botões de salvar treino e outras ações desta mensagem.
+      const textoNo = document.createTextNode(texto);
+      div.appendChild(textoNo);
+      if (remetente === "bot") div._kiaraTextoNode = textoNo;
 
       // Se o aluno pediu para salvar a ficha anterior, o servidor devolve o
       // texto exato da ficha, sem pedir ao Gemini que gere uma nova.
@@ -540,10 +722,17 @@
           if (loading) loading.remove();
           const respostaTexto = res.resposta || res.mensagem || "Pronto!";
           document.querySelectorAll("#mensagens .kiara-opcoes").forEach(el => el.remove());
-          adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino), res.opcoes, res.etapa, res.treino_anterior_texto || null);
-          falarComoKiara(respostaTexto);
+          const mensagemKiara = adicionarMensagem(respostaTexto, "bot", Boolean(res.eh_treino), res.opcoes, res.etapa, res.treino_anterior_texto || null);
+          falarComoKiara(respostaTexto, mensagemKiara);
           window.FitApp.historicoChat.push({ role: "assistant", content: respostaTexto });
-          atualizarIndicadorIA(res.modo);
+          atualizarIndicadorIA(res.modo, res.ia_aviso);
+          if (res.modo === "offline" && res.ia_aviso &&
+              erroOfflineAvisado !== res.ia_aviso.codigo) {
+            erroOfflineAvisado = res.ia_aviso.codigo;
+            window.FitApp.ui.toast(res.ia_aviso.mensagem, "erro");
+          } else if (res.modo === "gemini") {
+            erroOfflineAvisado = null;
+          }
           if (res.usuario) {
             window.FitApp.sessao.aluno = res.usuario;
             window.FitApp.sessao.preencherDadosComuns();

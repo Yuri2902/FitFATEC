@@ -7,3 +7,6 @@ google-genai
 # Voz neural local da Kiara (ONNX Runtime, sem API externa)
 kokoro-onnx==0.6.1
 soundfile>=0.13.0
+
+# Voz neural brasileira online (marcação de tempo por palavra)
+edge-tts>=7.0,<9

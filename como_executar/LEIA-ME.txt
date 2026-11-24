@@ -1,4 +1,4 @@
-﻿FITFATEC — GUIA RÁPIDO PARA EXECUTAR (WINDOWS)
+FITFATEC — GUIA RÁPIDO PARA EXECUTAR (WINDOWS)
 =============================================
 
 REQUISITOS
@@ -60,6 +60,20 @@ treinos e calendário com o MySQL do seu computador.
 - Script bloqueado pelo PowerShell: execute o comando Set-ExecutionPolicy
   da etapa 2 no terminal atual.
 - Página antiga: pressione Ctrl+F5 no navegador.
+
+
+ATUALIZACAO DO CHAT E DA VOZ (24/11/2026)
+- A resposta aparece integralmente no chat, sem efeito palavra por palavra.
+- A voz da Kiara recebe trechos agrupados por frases (ate cerca de 220 caracteres
+  por trecho, por seguranca).
+- O botao de salvar ficha individual exige pelo menos duas linhas de exercicios
+  reconhecidas. Revise a ficha antes de confirmar.
+- A logica de geracao de treinos e planos no backend permanece inalterada.
+- Para atualizar uma instalacao existente, substitua apenas public/visual.js,
+  reinicie o servidor com .\iniciar.ps1 e pressione Ctrl+F5 no navegador.
+- Esta alteracao NAO exige SQL, migracao, recriacao de banco, reinstalacao de
+  dependencias ou limpeza da sessao. Preserve .env, .venv e os dados do MySQL.
+- Teste voz e salvamento no navegador antes de publicar como validado.
 
 Para detalhes de instalação, banco existente e funcionamento, leia o README.md
 na raiz do projeto.
